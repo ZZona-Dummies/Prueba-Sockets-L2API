@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace Dummy_Socket
 {
-    public partial class Form1 : Form
+    public partial class frmOptions : EnhancedForm
     {
-        public Form1()
+        public frmOptions()
         {
             InitializeComponent();
         }
