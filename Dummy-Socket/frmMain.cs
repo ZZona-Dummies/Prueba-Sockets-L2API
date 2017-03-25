@@ -10,10 +10,23 @@ using System.Windows.Forms;
 
 namespace Dummy_Socket
 {
-    public partial class frmMain : EnhancedForm
+    public partial class frmMain : EnhancedForm<frmMain>
     {
-        private frmSocket socketForm = GetForm<frmSocket>();
-        private frmOptions optionsForm = GetForm<frmOptions>();
+        private frmSocket socketForm
+        {
+            get
+            {
+                return frmSocket.Me;
+            }
+        }
+
+        private frmOptions optionsForm
+        {
+            get
+            {
+                return frmOptions.Me;
+            }
+        }
 
         public frmMain()
         {
@@ -23,12 +36,15 @@ namespace Dummy_Socket
         private void button1_Click(object sender, EventArgs e)
         {
             socketForm.Show();
+            if (socketForm.tabControl1.SelectedTab != socketForm.tabPage1)
+                socketForm.tabControl1.SelectedTab = socketForm.tabPage1;
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
             socketForm.Show();
-            socketForm.tabControl1.SelectedTab = socketForm.tabPage2;
+            if(socketForm.tabControl1.SelectedTab != socketForm.tabPage2)
+                socketForm.tabControl1.SelectedTab = socketForm.tabPage2;
         }
 
         private void button3_Click(object sender, EventArgs e)

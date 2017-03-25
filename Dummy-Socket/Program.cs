@@ -20,22 +20,17 @@ namespace Dummy_Socket
         }
     }
 
-    public class EnhancedForm : Form
+    public class EnhancedForm<T> : Form
     {
-        private static EnhancedForm _eForm;
-        public static EnhancedForm Me
+        private static T _eForm;
+        public static T Me
         {
             get
             {
                 if (_eForm == null)
-                    _eForm = new EnhancedForm();
+                    _eForm = (T)Activator.CreateInstance(typeof(T));
                 return _eForm;
             }
-        }
-
-        public static T GetForm<T>() where T : EnhancedForm
-        {
-            return (T)Me;
         }
 
         //No tiene mayor uso

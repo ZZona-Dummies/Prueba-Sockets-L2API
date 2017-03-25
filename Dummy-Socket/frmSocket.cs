@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace Dummy_Socket
 {
-    public partial class frmSocket : EnhancedForm
+    public partial class frmSocket : EnhancedForm<frmSocket>
     {
         public frmSocket()
         {
