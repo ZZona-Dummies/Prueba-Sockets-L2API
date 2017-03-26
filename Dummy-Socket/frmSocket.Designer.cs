@@ -30,31 +30,33 @@
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.label1 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.button1 = new System.Windows.Forms.Button();
+            this.serverPort = new System.Windows.Forms.NumericUpDown();
+            this.serverLog = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.textBox3 = new System.Windows.Forms.TextBox();
-            this.textBox4 = new System.Windows.Forms.TextBox();
-            this.label4 = new System.Windows.Forms.Label();
-            this.button2 = new System.Windows.Forms.Button();
-            this.textBox5 = new System.Windows.Forms.TextBox();
-            this.label5 = new System.Windows.Forms.Label();
-            this.textBox6 = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
-            this.textBox7 = new System.Windows.Forms.TextBox();
-            this.label7 = new System.Windows.Forms.Label();
-            this.label8 = new System.Windows.Forms.Label();
-            this.textBox8 = new System.Windows.Forms.TextBox();
-            this.button3 = new System.Windows.Forms.Button();
-            this.textBox9 = new System.Windows.Forms.TextBox();
+            this.startServer = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
+            this.serverIP = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.clientPort = new System.Windows.Forms.NumericUpDown();
+            this.clientMsg = new System.Windows.Forms.TextBox();
             this.label9 = new System.Windows.Forms.Label();
+            this.sendMsg = new System.Windows.Forms.Button();
+            this.clientName = new System.Windows.Forms.TextBox();
+            this.label8 = new System.Windows.Forms.Label();
+            this.receivedMsgs = new System.Windows.Forms.TextBox();
+            this.label7 = new System.Windows.Forms.Label();
+            this.clientLog = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.clientConnect = new System.Windows.Forms.Button();
+            this.label5 = new System.Windows.Forms.Label();
+            this.clientIP = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.serverPort)).BeginInit();
             this.tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.clientPort)).BeginInit();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -69,12 +71,12 @@
             // 
             // tabPage1
             // 
-            this.tabPage1.Controls.Add(this.textBox3);
+            this.tabPage1.Controls.Add(this.serverPort);
+            this.tabPage1.Controls.Add(this.serverLog);
             this.tabPage1.Controls.Add(this.label3);
-            this.tabPage1.Controls.Add(this.button1);
-            this.tabPage1.Controls.Add(this.textBox2);
+            this.tabPage1.Controls.Add(this.startServer);
             this.tabPage1.Controls.Add(this.label2);
-            this.tabPage1.Controls.Add(this.textBox1);
+            this.tabPage1.Controls.Add(this.serverIP);
             this.tabPage1.Controls.Add(this.label1);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
@@ -84,70 +86,35 @@
             this.tabPage1.Text = "Servidor";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
-            // tabPage2
+            // serverPort
             // 
-            this.tabPage2.Controls.Add(this.textBox9);
-            this.tabPage2.Controls.Add(this.label9);
-            this.tabPage2.Controls.Add(this.button3);
-            this.tabPage2.Controls.Add(this.textBox8);
-            this.tabPage2.Controls.Add(this.label8);
-            this.tabPage2.Controls.Add(this.textBox7);
-            this.tabPage2.Controls.Add(this.label7);
-            this.tabPage2.Controls.Add(this.textBox4);
-            this.tabPage2.Controls.Add(this.label4);
-            this.tabPage2.Controls.Add(this.button2);
-            this.tabPage2.Controls.Add(this.textBox5);
-            this.tabPage2.Controls.Add(this.label5);
-            this.tabPage2.Controls.Add(this.textBox6);
-            this.tabPage2.Controls.Add(this.label6);
-            this.tabPage2.Location = new System.Drawing.Point(4, 22);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(452, 411);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "Cliente";
-            this.tabPage2.UseVisualStyleBackColor = true;
+            this.serverPort.Location = new System.Drawing.Point(53, 32);
+            this.serverPort.Maximum = new decimal(new int[] {
+            65536,
+            0,
+            0,
+            0});
+            this.serverPort.Minimum = new decimal(new int[] {
+            1024,
+            0,
+            0,
+            0});
+            this.serverPort.Name = "serverPort";
+            this.serverPort.Size = new System.Drawing.Size(283, 20);
+            this.serverPort.TabIndex = 7;
+            this.serverPort.Value = new decimal(new int[] {
+            30000,
+            0,
+            0,
+            0});
             // 
-            // label1
+            // serverLog
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 9);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(20, 13);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "IP:";
-            // 
-            // textBox1
-            // 
-            this.textBox1.Location = new System.Drawing.Point(53, 6);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(283, 20);
-            this.textBox1.TabIndex = 1;
-            // 
-            // textBox2
-            // 
-            this.textBox2.Location = new System.Drawing.Point(53, 32);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(283, 20);
-            this.textBox2.TabIndex = 3;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(6, 35);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(41, 13);
-            this.label2.TabIndex = 2;
-            this.label2.Text = "Puerto:";
-            // 
-            // button1
-            // 
-            this.button1.Location = new System.Drawing.Point(342, 17);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(104, 23);
-            this.button1.TabIndex = 4;
-            this.button1.Text = "Arrancar servidor";
-            this.button1.UseVisualStyleBackColor = true;
+            this.serverLog.Location = new System.Drawing.Point(9, 77);
+            this.serverLog.Multiline = true;
+            this.serverLog.Name = "serverLog";
+            this.serverLog.Size = new System.Drawing.Size(437, 328);
+            this.serverLog.TabIndex = 6;
             // 
             // label3
             // 
@@ -158,79 +125,137 @@
             this.label3.TabIndex = 5;
             this.label3.Text = "Log del servidor:";
             // 
-            // textBox3
+            // startServer
             // 
-            this.textBox3.Location = new System.Drawing.Point(9, 77);
-            this.textBox3.Multiline = true;
-            this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(437, 328);
-            this.textBox3.TabIndex = 6;
+            this.startServer.Location = new System.Drawing.Point(342, 17);
+            this.startServer.Name = "startServer";
+            this.startServer.Size = new System.Drawing.Size(104, 23);
+            this.startServer.TabIndex = 4;
+            this.startServer.Text = "Arrancar servidor";
+            this.startServer.UseVisualStyleBackColor = true;
+            this.startServer.Click += new System.EventHandler(this.startServer_Click);
             // 
-            // textBox4
+            // label2
             // 
-            this.textBox4.Location = new System.Drawing.Point(9, 277);
-            this.textBox4.Multiline = true;
-            this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(437, 128);
-            this.textBox4.TabIndex = 13;
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(6, 35);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(41, 13);
+            this.label2.TabIndex = 2;
+            this.label2.Text = "Puerto:";
             // 
-            // label4
+            // serverIP
             // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(6, 261);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(129, 13);
-            this.label4.TabIndex = 12;
-            this.label4.Text = "Log de errores del cliente:";
+            this.serverIP.Location = new System.Drawing.Point(53, 6);
+            this.serverIP.Name = "serverIP";
+            this.serverIP.Size = new System.Drawing.Size(283, 20);
+            this.serverIP.TabIndex = 1;
+            this.serverIP.Text = "127.0.0.1";
             // 
-            // button2
+            // label1
             // 
-            this.button2.Location = new System.Drawing.Point(342, 30);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(104, 23);
-            this.button2.TabIndex = 11;
-            this.button2.Text = "Conectarse";
-            this.button2.UseVisualStyleBackColor = true;
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(27, 9);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(20, 13);
+            this.label1.TabIndex = 0;
+            this.label1.Text = "IP:";
             // 
-            // textBox5
+            // tabPage2
             // 
-            this.textBox5.Location = new System.Drawing.Point(62, 32);
-            this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(274, 20);
-            this.textBox5.TabIndex = 10;
+            this.tabPage2.Controls.Add(this.clientPort);
+            this.tabPage2.Controls.Add(this.clientMsg);
+            this.tabPage2.Controls.Add(this.label9);
+            this.tabPage2.Controls.Add(this.sendMsg);
+            this.tabPage2.Controls.Add(this.clientName);
+            this.tabPage2.Controls.Add(this.label8);
+            this.tabPage2.Controls.Add(this.receivedMsgs);
+            this.tabPage2.Controls.Add(this.label7);
+            this.tabPage2.Controls.Add(this.clientLog);
+            this.tabPage2.Controls.Add(this.label4);
+            this.tabPage2.Controls.Add(this.clientConnect);
+            this.tabPage2.Controls.Add(this.label5);
+            this.tabPage2.Controls.Add(this.clientIP);
+            this.tabPage2.Controls.Add(this.label6);
+            this.tabPage2.Location = new System.Drawing.Point(4, 22);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(452, 411);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "Cliente";
+            this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // label5
+            // clientPort
             // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(6, 35);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(41, 13);
-            this.label5.TabIndex = 9;
-            this.label5.Text = "Puerto:";
+            this.clientPort.Location = new System.Drawing.Point(62, 32);
+            this.clientPort.Maximum = new decimal(new int[] {
+            65536,
+            0,
+            0,
+            0});
+            this.clientPort.Minimum = new decimal(new int[] {
+            1024,
+            0,
+            0,
+            0});
+            this.clientPort.Name = "clientPort";
+            this.clientPort.Size = new System.Drawing.Size(274, 20);
+            this.clientPort.TabIndex = 21;
+            this.clientPort.Value = new decimal(new int[] {
+            30000,
+            0,
+            0,
+            0});
             // 
-            // textBox6
+            // clientMsg
             // 
-            this.textBox6.Location = new System.Drawing.Point(62, 6);
-            this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(274, 20);
-            this.textBox6.TabIndex = 8;
+            this.clientMsg.Location = new System.Drawing.Point(62, 84);
+            this.clientMsg.Name = "clientMsg";
+            this.clientMsg.Size = new System.Drawing.Size(274, 20);
+            this.clientMsg.TabIndex = 20;
             // 
-            // label6
+            // label9
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(6, 9);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(20, 13);
-            this.label6.TabIndex = 7;
-            this.label6.Text = "IP:";
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(6, 87);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(50, 13);
+            this.label9.TabIndex = 19;
+            this.label9.Text = "Mensaje:";
             // 
-            // textBox7
+            // sendMsg
             // 
-            this.textBox7.Location = new System.Drawing.Point(9, 129);
-            this.textBox7.Multiline = true;
-            this.textBox7.Name = "textBox7";
-            this.textBox7.Size = new System.Drawing.Size(437, 129);
-            this.textBox7.TabIndex = 15;
+            this.sendMsg.Location = new System.Drawing.Point(342, 82);
+            this.sendMsg.Name = "sendMsg";
+            this.sendMsg.Size = new System.Drawing.Size(104, 23);
+            this.sendMsg.TabIndex = 18;
+            this.sendMsg.Text = "Enviar mensaje";
+            this.sendMsg.UseVisualStyleBackColor = true;
+            this.sendMsg.Click += new System.EventHandler(this.sendMsg_Click);
+            // 
+            // clientName
+            // 
+            this.clientName.Location = new System.Drawing.Point(62, 58);
+            this.clientName.Name = "clientName";
+            this.clientName.Size = new System.Drawing.Size(274, 20);
+            this.clientName.TabIndex = 17;
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(9, 61);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(47, 13);
+            this.label8.TabIndex = 16;
+            this.label8.Text = "Nombre:";
+            // 
+            // receivedMsgs
+            // 
+            this.receivedMsgs.Location = new System.Drawing.Point(9, 129);
+            this.receivedMsgs.Multiline = true;
+            this.receivedMsgs.Name = "receivedMsgs";
+            this.receivedMsgs.Size = new System.Drawing.Size(437, 129);
+            this.receivedMsgs.TabIndex = 15;
             // 
             // label7
             // 
@@ -241,46 +266,58 @@
             this.label7.TabIndex = 14;
             this.label7.Text = "Mensajes recibidos:";
             // 
-            // label8
+            // clientLog
             // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(6, 61);
-            this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(47, 13);
-            this.label8.TabIndex = 16;
-            this.label8.Text = "Nombre:";
+            this.clientLog.Location = new System.Drawing.Point(9, 277);
+            this.clientLog.Multiline = true;
+            this.clientLog.Name = "clientLog";
+            this.clientLog.Size = new System.Drawing.Size(437, 128);
+            this.clientLog.TabIndex = 13;
             // 
-            // textBox8
+            // label4
             // 
-            this.textBox8.Location = new System.Drawing.Point(62, 58);
-            this.textBox8.Name = "textBox8";
-            this.textBox8.Size = new System.Drawing.Size(274, 20);
-            this.textBox8.TabIndex = 17;
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(6, 261);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(129, 13);
+            this.label4.TabIndex = 12;
+            this.label4.Text = "Log de errores del cliente:";
             // 
-            // button3
+            // clientConnect
             // 
-            this.button3.Location = new System.Drawing.Point(342, 82);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(104, 23);
-            this.button3.TabIndex = 18;
-            this.button3.Text = "Enviar mensaje";
-            this.button3.UseVisualStyleBackColor = true;
+            this.clientConnect.Location = new System.Drawing.Point(342, 30);
+            this.clientConnect.Name = "clientConnect";
+            this.clientConnect.Size = new System.Drawing.Size(104, 23);
+            this.clientConnect.TabIndex = 11;
+            this.clientConnect.Text = "Conectarse";
+            this.clientConnect.UseVisualStyleBackColor = true;
+            this.clientConnect.Click += new System.EventHandler(this.clientConnect_Click);
             // 
-            // textBox9
+            // label5
             // 
-            this.textBox9.Location = new System.Drawing.Point(62, 84);
-            this.textBox9.Name = "textBox9";
-            this.textBox9.Size = new System.Drawing.Size(274, 20);
-            this.textBox9.TabIndex = 20;
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(15, 35);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(41, 13);
+            this.label5.TabIndex = 9;
+            this.label5.Text = "Puerto:";
             // 
-            // label9
+            // clientIP
             // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(6, 87);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(50, 13);
-            this.label9.TabIndex = 19;
-            this.label9.Text = "Mensaje:";
+            this.clientIP.Location = new System.Drawing.Point(62, 6);
+            this.clientIP.Name = "clientIP";
+            this.clientIP.Size = new System.Drawing.Size(274, 20);
+            this.clientIP.TabIndex = 8;
+            this.clientIP.Text = "127.0.0.1";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(36, 9);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(20, 13);
+            this.label6.TabIndex = 7;
+            this.label6.Text = "IP:";
             // 
             // frmSocket
             // 
@@ -296,37 +333,39 @@
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.serverPort)).EndInit();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.clientPort)).EndInit();
             this.ResumeLayout(false);
 
         }
 
         #endregion
 
-        public System.Windows.Forms.TabControl tabControl1;
-        public System.Windows.Forms.TabPage tabPage1;
-        public System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TabControl tabControl1;
+        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.TextBox serverIP;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.Button startServer;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TextBox textBox3;
+        private System.Windows.Forms.TextBox serverLog;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox textBox4;
+        private System.Windows.Forms.TextBox clientLog;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.TextBox textBox5;
+        private System.Windows.Forms.Button clientConnect;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.TextBox textBox6;
+        private System.Windows.Forms.TextBox clientIP;
         private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.TextBox textBox8;
+        private System.Windows.Forms.TextBox clientName;
         private System.Windows.Forms.Label label8;
-        private System.Windows.Forms.TextBox textBox7;
+        private System.Windows.Forms.TextBox receivedMsgs;
         private System.Windows.Forms.Label label7;
-        private System.Windows.Forms.Button button3;
-        private System.Windows.Forms.TextBox textBox9;
+        private System.Windows.Forms.Button sendMsg;
+        private System.Windows.Forms.TextBox clientMsg;
         private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.NumericUpDown serverPort;
+        private System.Windows.Forms.NumericUpDown clientPort;
     }
 }

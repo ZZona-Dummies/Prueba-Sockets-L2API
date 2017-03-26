@@ -58,7 +58,7 @@
             // opcionesToolStripMenuItem
             // 
             this.opcionesToolStripMenuItem.Name = "opcionesToolStripMenuItem";
-            this.opcionesToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.opcionesToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
             this.opcionesToolStripMenuItem.Text = "Opciones";
             this.opcionesToolStripMenuItem.Click += new System.EventHandler(this.opcionesToolStripMenuItem_Click);
             // 
@@ -109,6 +109,7 @@
             this.MaximizeBox = false;
             this.Name = "frmMain";
             this.Text = "Dummy Sockets - Main";
+            this.Load += new System.EventHandler(this.frmMain_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
