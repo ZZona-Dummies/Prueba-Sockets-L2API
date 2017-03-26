@@ -1,5 +1,4 @@
-﻿using Lerp2API.Communication.Sockets;
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
 
@@ -44,6 +43,8 @@ namespace Dummy_Socket
                     if (ValidateClient())
                     {
                         client = new SocketClient(clientIP.Text, (int)clientPort.Value, ClientAction());
+                        client.ins = this;
+
                         client.DoConnection();
                     }
                     else
@@ -55,12 +56,12 @@ namespace Dummy_Socket
                 if (ValidateServer())
                 {
                     server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int)serverPort.Value, SocketType.Stream, ProtocolType.Tcp, false);
+                    server.ins = this;
 
                     server.ComeAlive();
                     server.StartListening();
 
-                    server.ServerCallback = new AsyncCallback(SocketServer.AcceptCallback);
-
+                    server.ServerCallback = new AsyncCallback(server.AcceptCallback);
                 }
                 else
                     WriteServerLog(notValidServerConn);
@@ -101,11 +102,11 @@ namespace Dummy_Socket
             client.WriteLine(clientMsg.Text);
         }
 
-        private void WriteClientLog(string str)
+        public void WriteClientLog(string str)
         {
             clientLog.Text += str + Environment.NewLine;
         }
-        private void WriteServerLog(string str)
+        public void WriteServerLog(string str)
         {
             serverLog.Text += str + Environment.NewLine;
         }
