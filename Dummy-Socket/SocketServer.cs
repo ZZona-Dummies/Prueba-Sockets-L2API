@@ -9,14 +9,21 @@ namespace Dummy_Socket
     {
         public const int lerpedPort = 22222;
 
-        public frmSocket ins;
-
         public Socket ServerSocket;
         public SocketPermission Permision;
         public IPAddress IP;
         public int Port;
         private IPEndPoint _endpoint;
         private byte[] bytes;
+
+        public int socketID;
+        private frmSocket ins
+        {
+            get
+            {
+                return frmMain.socketIns[socketID].instance;
+            }
+        }
 
         private static bool debug;
 
@@ -72,20 +79,32 @@ namespace Dummy_Socket
         {
             IPEndPoint end = IPEnd;
             if (end != null) ServerSocket.Bind(end);
+#if STATIC_LOG
+            else frmSocket.WriteServerLog("Destination IP isn't defined!");
+#else
             else ins.WriteServerLog("Destination IP isn't defined!");
+#endif
         }
 
         public void StartListening()
         {
             if (ServerSocket.IsBound) ServerSocket.Listen(10);
+#if STATIC_LOG
+            else frmSocket.WriteServerLog("You have to make alive your Server socket first! (Call 'ComeAlive' method)");
+#else
             else ins.WriteServerLog("You have to make alive your Server socket first! (Call 'ComeAlive' method)");
+#endif
         }
 
         private void AssignCallback(AsyncCallback aCallback)
         {
             if (aCallback == null)
             {
+#if STATIC_LOG
+                frmSocket.WriteServerLog("Server callback cannot be null");
+#else
                 ins.WriteServerLog("Server callback cannot be null");
+#endif
                 return;
             }
             //aCallback = new AsyncCallback(AcceptCallback);
@@ -99,7 +118,11 @@ namespace Dummy_Socket
                 ServerSocket.Shutdown(SocketShutdown.Receive);
                 ServerSocket.Close();
             }
+#if STATIC_LOG
+            else frmSocket.WriteServerLog("If you want to close something, you have to be first connected!");
+#else
             else ins.WriteServerLog("If you want to close something, you have to be first connected!");
+#endif
         }
 
         /// <summary>
@@ -188,7 +211,11 @@ namespace Dummy_Socket
                         string str =
                             content.Substring(0, content.LastIndexOf("<Client Quit>"));
                         if (debug)
+#if STATIC_LOG
+                            frmSocket.WriteServerLog(string.Format("Read {0} bytes from client.\n Data: {1}", str.Length * 2, str));
+#else
                             ins.WriteServerLog(string.Format("Read {0} bytes from client.\n Data: {1}", str.Length * 2, str));
+#endif
 
                         // Prepare the reply message
                         byte[] byteData =
@@ -232,7 +259,11 @@ namespace Dummy_Socket
                 // The number of bytes sent to the Socket
                 int bytesSend = handler.EndSend(ar);
                 if (debug)
+#if STATIC_LOG
+                    frmSocket.WriteServerLog(string.Format("Sent {0} bytes to Client", bytesSend));
+#else
                     ins.WriteServerLog(string.Format("Sent {0} bytes to Client", bytesSend));
+#endif
             }
             catch (Exception ex)
             {

@@ -113,6 +113,7 @@
             this.serverLog.Location = new System.Drawing.Point(9, 77);
             this.serverLog.Multiline = true;
             this.serverLog.Name = "serverLog";
+            this.serverLog.ReadOnly = true;
             this.serverLog.Size = new System.Drawing.Size(437, 328);
             this.serverLog.TabIndex = 6;
             // 
@@ -254,6 +255,7 @@
             this.receivedMsgs.Location = new System.Drawing.Point(9, 129);
             this.receivedMsgs.Multiline = true;
             this.receivedMsgs.Name = "receivedMsgs";
+            this.receivedMsgs.ReadOnly = true;
             this.receivedMsgs.Size = new System.Drawing.Size(437, 129);
             this.receivedMsgs.TabIndex = 15;
             // 
@@ -271,6 +273,7 @@
             this.clientLog.Location = new System.Drawing.Point(9, 277);
             this.clientLog.Multiline = true;
             this.clientLog.Name = "clientLog";
+            this.clientLog.ReadOnly = true;
             this.clientLog.Size = new System.Drawing.Size(437, 128);
             this.clientLog.TabIndex = 13;
             // 
@@ -329,6 +332,7 @@
             this.MaximizeBox = false;
             this.Name = "frmSocket";
             this.Text = "Dummy Sockets - Conexiones";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmSocket_Closing);
             this.Load += new System.EventHandler(this.frmSocket_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);

@@ -29,6 +29,7 @@ namespace Dummy_Socket
         }
 
         public static Dictionary<int, SocketInstance> socketIns = new Dictionary<int, SocketInstance>();
+        public static int lastID = -1;
 
         public frmMain()
         {
@@ -66,7 +67,6 @@ namespace Dummy_Socket
                         so.Show();
                         so.ShowServerTab();
                         so.Start(false);
-                        socketIns.Add(i, new SocketInstance(so, false));
                     }
 
                 if (clientIns)
@@ -78,7 +78,6 @@ namespace Dummy_Socket
                         so.ShowClientTab();
                         so.SetName("Client"+i);
                         so.Start(true);
-                        socketIns.Add(i + sin, new SocketInstance(so, true));
                     }
             }
         }

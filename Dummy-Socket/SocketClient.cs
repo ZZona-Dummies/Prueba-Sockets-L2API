@@ -19,7 +19,14 @@ namespace Dummy_Socket
         private Action act;
         private int period = 1;
 
-        public frmSocket ins;
+        public int socketID;
+        private frmSocket ins
+        {
+            get
+            {
+                return frmMain.socketIns[socketID].instance;
+            }
+        }
 
         internal IPEndPoint IPEnd
         {
@@ -104,7 +111,11 @@ namespace Dummy_Socket
                 ClientSocket.Connect(end);
                 StartReceiving();
             }
+#if STATIC_LOG
+            else frmSocket.WriteClientLog("Destination IP isn't defined!");
+#else
             else ins.WriteClientLog("Destination IP isn't defined!");
+#endif
         }
 
         public int Write(string msg)
@@ -155,7 +166,11 @@ namespace Dummy_Socket
         {
             if (soShutdown == SocketShutdown.Receive)
             {
+#if STATIC_LOG
+                frmSocket.WriteClientLog("Remember that you're in a Client, you, you can't only close Both connections or only your connection.");
+#else
                 ins.WriteClientLog("Remember that you're in a Client, you, you can't only close Both connections or only your connection.");
+#endif
                 return;
             }
             ClientSocket.Shutdown(soShutdown);

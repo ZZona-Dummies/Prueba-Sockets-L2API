@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Windows.Forms;
+using System.Linq;
 
 namespace Dummy_Socket
 {
@@ -11,6 +13,8 @@ namespace Dummy_Socket
         public SocketServer server;
 
         public bool disableAutoName;
+
+        public int socketID;
 
         private SocketState _state;
         public SocketState state
@@ -24,21 +28,35 @@ namespace Dummy_Socket
                 SocketState oldstate = _state;
                 _state = value;
                 if (_state == SocketState.ClientStarted)
+                {
                     clientConnect.Text = "¡Conectado!";
+                    DisableControls(false);
+                }
                 else if (_state == SocketState.ServerStarted)
+                {
                     startServer.Text = "¡Server arrancado!";
+                    DisableControls(true);
+                }
                 else
                 {
                     if (oldstate == SocketState.ClientStarted)
+                    {
                         clientConnect.Text = "Conectarse";
+                        EnableControls(true);
+                    }
                     else if (oldstate == SocketState.ServerStarted)
+                    {
                         startServer.Text = "Arrancar servidor";
+                        EnableControls(false);
+                    }
                 }
             }
         }
 
         public const string notValidClientConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña clientes.",
                             notValidServerConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña servidores.";
+
+        private string svLog, clLog;
 
         public frmSocket()
         {
@@ -66,15 +84,15 @@ namespace Dummy_Socket
         public void Start(bool isClient)
         {
             bool succ = false;
-            if(isClient)
+            socketID = ++frmMain.lastID;
+            if (isClient)
             {
                 if (client == null)
                 {
                     if (ValidateClient())
                     {
                         client = new SocketClient(clientIP.Text, (int)clientPort.Value, ClientAction());
-                        client.ins = this;
-
+                        client.socketID = socketID;
                         client.DoConnection();
 
                         succ = true;
@@ -87,8 +105,8 @@ namespace Dummy_Socket
             {
                 if (ValidateServer())
                 {
-                    server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int)serverPort.Value, SocketType.Stream, ProtocolType.Tcp, false);
-                    server.ins = this;
+                    server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int)serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
+                    server.socketID = socketID;
 
                     server.ComeAlive();
                     server.StartListening();
@@ -101,7 +119,10 @@ namespace Dummy_Socket
                     WriteServerLog(notValidServerConn);
             }
             if (succ)
+            {
                 state = isClient ? SocketState.ClientStarted : SocketState.ServerStarted;
+                frmMain.socketIns.Add(socketID, new SocketInstance(this, isClient));
+            }
         }
 
         private Action ClientAction()
@@ -138,17 +159,84 @@ namespace Dummy_Socket
             client.WriteLine(clientMsg.Text);
         }
 
+#if STATIC_LOG
+        public static void WriteClientLog(string str)
+        {
+            WriteLog(str, true);
+        }
+        public static void WriteServerLog(string str)
+        {
+            WriteLog(str, false);
+        }
+        private static void WriteLog(string str, bool isClient)
+        {
+            Console.WriteLine(str);
+            str += Environment.NewLine;
+            if (isClient)
+            {
+                foreach (frmSocket so in frmMain.socketIns.Values.Where(x => x.isClient).Select(x => x.instance))
+                    so.clientLog.Text += str;
+            }
+            else
+            {
+                foreach (frmSocket so in frmMain.socketIns.Values.Where(x => !x.isClient).Select(x => x.instance))
+                    so.serverLog.Text += str;
+            }
+        }
+#else
         public void WriteClientLog(string str)
         {
-            clientLog.Text += str + Environment.NewLine;
+            WriteLog(str, true);
         }
         public void WriteServerLog(string str)
         {
-            serverLog.Text += str + Environment.NewLine;
+            WriteLog(str, false);
         }
+        private void WriteLog(string str, bool isClient)
+        {
+            Console.WriteLine(str);
+            str += Environment.NewLine;
+            if (isClient)
+            {
+                clLog += str;
+                if (clientLog.InvokeRequired)
+                    clientLog.Invoke(new MethodInvoker(() => { clientLog.Text = clLog; }));
+            }
+            else
+            {
+                svLog += str;
+                if (serverLog.InvokeRequired)
+                    serverLog.Invoke(new MethodInvoker(() => { serverLog.Text = svLog; }));
+            }
+        }
+#endif
         public void SetName(string name)
         {
             clientName.Text = name;
+        }
+
+        private void frmSocket_Closing(object sender, FormClosingEventArgs e)
+        {
+
+        }
+
+        private void EnableControls(bool isClient)
+        {
+            ControlControls(isClient, true);
+        }
+
+        private void DisableControls(bool isClient)
+        {
+            ControlControls(isClient, false);
+        }
+
+        internal void ControlControls(bool isClient, bool enable)
+        {
+            TabPage tb = tabPage2;
+            if (!isClient) tb = tabPage1;
+
+            foreach (Control c in tb.Controls)
+                c.Enabled = enable;
         }
     }
 }
