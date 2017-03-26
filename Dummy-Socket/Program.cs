@@ -57,7 +57,7 @@ namespace Dummy_Socket
         }
 
         //No tiene mayor uso
-        public new void Show()
+        /*public new void Show()
         {
             if (!Application.OpenForms.Cast<Form>().Contains(this))
                 base.Show();
@@ -68,7 +68,7 @@ namespace Dummy_Socket
         public void ShowMulti()
         {
             base.Show();
-        }
+        }*/
     }
 
     public class SocketInstance

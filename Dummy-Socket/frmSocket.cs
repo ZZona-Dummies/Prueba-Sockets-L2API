@@ -4,10 +4,38 @@ using System.Net.Sockets;
 
 namespace Dummy_Socket
 {
+    public enum SocketState { NotStarted, ClientStarted, ServerStarted }
     public partial class frmSocket : EnhancedForm<frmSocket>
     {
         public SocketClient client;
         public SocketServer server;
+
+        public bool disableAutoName;
+
+        private SocketState _state;
+        public SocketState state
+        {
+            get
+            {
+                return _state;
+            }
+            set
+            {
+                SocketState oldstate = _state;
+                _state = value;
+                if (_state == SocketState.ClientStarted)
+                    clientConnect.Text = "¡Conectado!";
+                else if (_state == SocketState.ServerStarted)
+                    startServer.Text = "¡Server arrancado!";
+                else
+                {
+                    if (oldstate == SocketState.ClientStarted)
+                        clientConnect.Text = "Conectarse";
+                    else if (oldstate == SocketState.ServerStarted)
+                        startServer.Text = "Arrancar servidor";
+                }
+            }
+        }
 
         public const string notValidClientConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña clientes.",
                             notValidServerConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña servidores.";
@@ -19,16 +47,17 @@ namespace Dummy_Socket
 
         private void frmSocket_Load(object sender, EventArgs e)
         {
-
+            if (!disableAutoName)
+                clientName.Text = string.Format("Client{0}", new Random().Next(0, 9999));
         }
 
-        public void ShowClientTab()
+        public void ShowServerTab()
         {
             if (tabControl1.SelectedTab != tabPage1)
                 tabControl1.SelectedTab = tabPage1;
         }
 
-        public void ShowServerTab()
+        public void ShowClientTab()
         {
             if (tabControl1.SelectedTab != tabPage2)
                 tabControl1.SelectedTab = tabPage2;
@@ -36,6 +65,7 @@ namespace Dummy_Socket
 
         public void Start(bool isClient)
         {
+            bool succ = false;
             if(isClient)
             {
                 if (client == null)
@@ -46,6 +76,8 @@ namespace Dummy_Socket
                         client.ins = this;
 
                         client.DoConnection();
+
+                        succ = true;
                     }
                     else
                         WriteClientLog(notValidClientConn);
@@ -62,10 +94,14 @@ namespace Dummy_Socket
                     server.StartListening();
 
                     server.ServerCallback = new AsyncCallback(server.AcceptCallback);
+
+                    succ = true;
                 }
                 else
                     WriteServerLog(notValidServerConn);
             }
+            if (succ)
+                state = isClient ? SocketState.ClientStarted : SocketState.ServerStarted;
         }
 
         private Action ClientAction()
@@ -89,12 +125,12 @@ namespace Dummy_Socket
 
         private void startServer_Click(object sender, EventArgs e)
         {
-            Start(true);
+            Start(false);
         }
 
         private void clientConnect_Click(object sender, EventArgs e)
         {
-            Start(false);
+            Start(true);
         }
 
         private void sendMsg_Click(object sender, EventArgs e)
@@ -109,6 +145,10 @@ namespace Dummy_Socket
         public void WriteServerLog(string str)
         {
             serverLog.Text += str + Environment.NewLine;
+        }
+        public void SetName(string name)
+        {
+            clientName.Text = name;
         }
     }
 }

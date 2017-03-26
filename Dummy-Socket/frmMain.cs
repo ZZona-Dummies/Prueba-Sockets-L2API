@@ -38,13 +38,13 @@ namespace Dummy_Socket
         private void button1_Click(object sender, EventArgs e)
         {
             socketForm.Show();
-            socketForm.ShowClientTab();
+            socketForm.ShowServerTab();
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
             socketForm.Show();
-            socketForm.ShowServerTab();
+            socketForm.ShowClientTab();
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -73,8 +73,10 @@ namespace Dummy_Socket
                     for (int i = 0; i < cin; ++i)
                     {
                         frmSocket so = frmSocket.Me.CreateInstance<frmSocket>();
+                        so.disableAutoName = true;
                         so.Show();
                         so.ShowClientTab();
+                        so.SetName("Client"+i);
                         so.Start(true);
                         socketIns.Add(i + sin, new SocketInstance(so, true));
                     }

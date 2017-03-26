@@ -13,7 +13,7 @@ namespace Dummy_Socket
 
         public static Configuration Load()
         {
-            Configuration ins = XMLTools.DeserializeFromFile<Configuration>(configFile);
+            Configuration ins = File.Exists(configFile) ? XMLTools.DeserializeFromFile<Configuration>(configFile) : null;
             if(ins != null)
                 return ins;
             return new Configuration();
