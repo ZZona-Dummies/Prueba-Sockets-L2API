@@ -9,3 +9,9 @@ D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\obj\Debug\Dumm
 D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\obj\Debug\Dummy_Socket.frmMain.resources
 D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\obj\Debug\Dummy_Socket.frmOptions.resources
 D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\obj\Debug\Dummy_Socket.frmSocket.resources
+D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\bin\Debug\Lerp2API.dll
+D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\bin\Debug\UnityEngine.dll
+D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\bin\Debug\Lerp2API.pdb
+D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\bin\Debug\Lerp2API.xml
+D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\bin\Debug\UnityEngine.UI.dll
+D:\VISUAL STUDIO\Visual Studio Projects\Dummy-Socket\Dummy-Socket\bin\Debug\UnityEditor.dll

@@ -12,13 +12,13 @@ namespace Dummy_Socket
 {
     public partial class frmMain : EnhancedForm<frmMain>
     {
-        private frmSocket socketForm
+        /*private frmSocket socketForm
         {
             get
             {
                 return frmSocket.Me;
             }
-        }
+        }*/
 
         private frmOptions optionsForm
         {
@@ -38,12 +38,14 @@ namespace Dummy_Socket
 
         private void button1_Click(object sender, EventArgs e)
         {
+            frmSocket socketForm = new frmSocket();
             socketForm.Show();
             socketForm.ShowServerTab();
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
+            frmSocket socketForm = new frmSocket();
             socketForm.Show();
             socketForm.ShowClientTab();
         }

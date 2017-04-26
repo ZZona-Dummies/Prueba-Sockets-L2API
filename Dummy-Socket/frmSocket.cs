@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Windows.Forms;
 using System.Linq;
+using Lerp2API.SafeECalls;
 
 namespace Dummy_Socket
 {
@@ -109,9 +110,9 @@ namespace Dummy_Socket
                     server.socketID = socketID;
 
                     server.ComeAlive();
-                    server.StartListening();
+                    //server.StartListening();
 
-                    server.ServerCallback = new AsyncCallback(server.AcceptCallback);
+                    //server.ServerCallback = new AsyncCallback(server.AcceptCallback);
 
                     succ = true;
                 }
@@ -130,7 +131,10 @@ namespace Dummy_Socket
             return () => {
                 byte[] bytes = new byte[1024];
                 string str = client.ReceiveMessage(bytes);
-                receivedMsgs.Text += str + Environment.NewLine;
+                SocketMessage sm = JsonUtility.FromJson<SocketMessage>(str);
+                Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
+                if (receivedMsgs.InvokeRequired)
+                    receivedMsgs.Invoke(new MethodInvoker(() => { receivedMsgs.Text += sm.msg; }));
             };
         }
 
@@ -157,6 +161,7 @@ namespace Dummy_Socket
         private void sendMsg_Click(object sender, EventArgs e)
         {
             client.WriteLine(clientMsg.Text);
+            clientMsg.Text = "";
         }
 
 #if STATIC_LOG
@@ -184,27 +189,27 @@ namespace Dummy_Socket
             }
         }
 #else
-        public void WriteClientLog(string str)
+        public void WriteClientLog(string str, params object[] pars)
         {
-            WriteLog(str, true);
+            WriteLog(str, true, pars);
         }
-        public void WriteServerLog(string str)
+        public void WriteServerLog(string str, params object[] pars)
         {
-            WriteLog(str, false);
+            WriteLog(str, false, pars);
         }
-        private void WriteLog(string str, bool isClient)
+        private void WriteLog(string str, bool isClient, params object[] pars)
         {
             Console.WriteLine(str);
             str += Environment.NewLine;
             if (isClient)
             {
-                clLog += str;
+                clLog += pars != null ? string.Format(str, pars) : str;
                 if (clientLog.InvokeRequired)
                     clientLog.Invoke(new MethodInvoker(() => { clientLog.Text = clLog; }));
             }
             else
             {
-                svLog += str;
+                svLog += pars != null ? string.Format(str, pars) : str;
                 if (serverLog.InvokeRequired)
                     serverLog.Invoke(new MethodInvoker(() => { serverLog.Text = svLog; }));
             }
@@ -217,7 +222,13 @@ namespace Dummy_Socket
 
         private void frmSocket_Closing(object sender, FormClosingEventArgs e)
         {
-
+            if (state == SocketState.ClientStarted)
+            {
+                client.CloseConnection(SocketShutdown.Both);
+                client.DisposeSocket();
+            }
+            if(state == SocketState.ServerStarted)
+                server.CloseServer();
         }
 
         private void EnableControls(bool isClient)
