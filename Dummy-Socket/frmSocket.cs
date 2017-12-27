@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using DeltaSockets;
+using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -55,6 +56,14 @@ namespace Dummy_Socket
             }
         }
 
+        public TextBox txtServerLog
+        {
+            get
+            {
+                return serverLog;
+            }
+        }
+
         public const string notValidClientConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña clientes.",
                             notValidServerConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña servidores.";
 
@@ -94,7 +103,7 @@ namespace Dummy_Socket
                     if (ValidateClient())
                     {
                         client = new SocketClient(clientIP.Text, (int) clientPort.Value, ClientAction());
-                        client.socketID = socketID;
+                        //client.socketID = socketID;
                         client.DoConnection();
 
                         succ = true;
@@ -108,7 +117,7 @@ namespace Dummy_Socket
                 if (ValidateServer())
                 {
                     server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int) serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
-                    server.socketID = socketID;
+                    //server.socketID = socketID;
 
                     server.ComeAlive();
                     //server.StartListening();
@@ -132,11 +141,19 @@ namespace Dummy_Socket
             return () =>
             {
                 byte[] bytes = new byte[1024];
-                string str = client.ReceiveMessage(bytes);
-                SocketMessage sm = JsonConvert.DeserializeObject<SocketMessage>(str);
-                Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
-                if (receivedMsgs.InvokeRequired)
-                    receivedMsgs.Invoke(new MethodInvoker(() => { receivedMsgs.Text += sm.msg; }));
+
+                //string str = client.ReceiveMessage(bytes);
+                //SocketMessage sm = JsonConvert.DeserializeObject<SocketMessage>(str);
+                //Cambios...
+
+                SocketMessage sm = null;
+                if (client.ReceiveData(out sm))
+                    Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
+                else
+                    Console.WriteLine("Error receiving data!");
+
+                if (receivedMsgs.InvokeRequired) //De esto hice una versión mejorada
+                    receivedMsgs.Invoke(new MethodInvoker(() => { receivedMsgs.Text += sm.msg + Environment.NewLine; }));
             };
         }
 
@@ -162,9 +179,11 @@ namespace Dummy_Socket
 
         private void sendMsg_Click(object sender, EventArgs e)
         {
-            client.WriteLine(clientMsg.Text);
+            client.SendData(clientMsg.Text);
             clientMsg.Text = "";
         }
+
+        //Obsoleto
 
 #if STATIC_LOG
         public static void WriteClientLog(string str)
@@ -222,6 +241,8 @@ namespace Dummy_Socket
 
 #endif
 
+        //End obsoleto
+
         public void SetName(string name)
         {
             clientName.Text = name;
@@ -230,10 +251,7 @@ namespace Dummy_Socket
         private void frmSocket_Closing(object sender, FormClosingEventArgs e)
         {
             if (state == SocketState.ClientStarted)
-            {
-                client.CloseConnection(SocketShutdown.Both);
-                client.DisposeSocket();
-            }
+                client.End();
             if (state == SocketState.ServerStarted)
                 server.CloseServer();
         }

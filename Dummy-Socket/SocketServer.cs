@@ -1,52 +1,82 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 
-namespace Dummy_Socket
+namespace DeltaSockets
 {
+    /// <summary>
+    /// Class SocketServer.
+    /// </summary>
     public class SocketServer
     {
         //The ClientInfo structure holds the required information about every
         //client connected to the server
         private struct ClientInfo
         {
+            /// <summary>
+            /// The socket
+            /// </summary>
             public Socket socket;   //Socket of the client
+
+            /// <summary>
+            /// The string name
+            /// </summary>
             public string strName;  //Name by which the user logged into the chat room
         }
 
         //The collection of all clients logged into the room (an array of type ClientInfo)
         private ArrayList clientList;
 
-        public const int lerpedPort = 22222;
+        /// <summary>
+        /// The lerped port
+        /// </summary>
+        public const int DefPort = 7776;
 
+        /// <summary>
+        /// The server socket
+        /// </summary>
         public Socket ServerSocket;
+
+        /// <summary>
+        /// The permision
+        /// </summary>
         public SocketPermission Permision;
+
+        /// <summary>
+        /// The ip
+        /// </summary>
         public IPAddress IP;
+
+        /// <summary>
+        /// The port
+        /// </summary>
         public int Port;
+
         private IPEndPoint _endpoint;
         private byte[] byteData = new byte[1024];
+
+        /// <summary>
+        /// All done
+        /// </summary>
         public static ManualResetEvent allDone = new ManualResetEvent(false);
 
+        /// <summary>
+        /// The routing table
+        /// </summary>
         public static Dictionary<int, Socket> routingTable = new Dictionary<int, Socket>();
 
-        public int socketID;
-
-        private frmSocket ins
-        {
-            get
-            {
-                return frmMain.socketIns[socketID].instance;
-            }
-        }
+        private static List<int> closedClients = new List<int>();
 
         private static bool debug;
 
         private AsyncCallback _callback;
+
+        //private Logger logger;
 
         internal IPEndPoint IPEnd
         {
@@ -62,14 +92,36 @@ namespace Dummy_Socket
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SocketServer"/> class.
+        /// </summary>
+        /// <param name="debug">if set to <c>true</c> [debug].</param>
+        /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
         public SocketServer(bool debug, bool doConnection = false) :
-            this(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), Dns.GetHostEntry("").AddressList[0], lerpedPort, SocketType.Stream, ProtocolType.Tcp, debug, doConnection)
+            this(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), Dns.GetHostEntry("").AddressList[0], DefPort, SocketType.Stream, ProtocolType.Tcp, debug, doConnection)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SocketServer"/> class.
+        /// </summary>
+        /// <param name="ip">The ip.</param>
+        /// <param name="port">The port.</param>
+        /// <param name="debug">if set to <c>true</c> [debug].</param>
+        /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
         public SocketServer(string ip, int port, bool debug, bool doConnection = false) :
             this(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(ip), port, SocketType.Stream, ProtocolType.Tcp, debug, doConnection)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SocketServer"/> class.
+        /// </summary>
+        /// <param name="permission">The permission.</param>
+        /// <param name="ipAddr">The ip addr.</param>
+        /// <param name="port">The port.</param>
+        /// <param name="sType">Type of the s.</param>
+        /// <param name="pType">Type of the p.</param>
+        /// <param name="curDebug">if set to <c>true</c> [current debug].</param>
+        /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
         public SocketServer(SocketPermission permission, IPAddress ipAddr, int port, SocketType sType, ProtocolType pType, bool curDebug, bool doConnection = false)
         {
             permission.Demand();
@@ -78,12 +130,16 @@ namespace Dummy_Socket
             Port = port;
 
             debug = curDebug;
+            //logger = new Logger(Path.Combine(Path.GetDirectoryName(Path.Combine(Application.dataPath, LerpedCore.defaultLogFilePath)), "server-logger.log"));
 
             ServerSocket = new Socket(ipAddr.AddressFamily, sType, pType);
 
             if (doConnection) ServerSocket.Bind(IPEnd);
         }
 
+        /// <summary>
+        /// Comes the alive.
+        /// </summary>
         public void ComeAlive()
         {
             if (IPEnd != null)
@@ -98,14 +154,10 @@ namespace Dummy_Socket
                 }
                 catch (Exception ex)
                 {
-                    ins.WriteServerLog(ex.Message);
+                    Console.WriteLine(ex.Message);
                 }
             }
-#if STATIC_LOG
-            else frmSocket.WriteServerLog("Destination IP isn't defined!");
-#else
-            else ins.WriteServerLog("Destination IP isn't defined!");
-#endif
+            else Console.WriteLine("Destination IP isn't defined!");
         }
 
         private void OnAccept(IAsyncResult ar)
@@ -123,7 +175,7 @@ namespace Dummy_Socket
             }
             catch (Exception ex)
             {
-                ins.WriteServerLog(ex.Message);
+                Console.WriteLine(ex.Message);
             }
         }
 
@@ -136,38 +188,51 @@ namespace Dummy_Socket
 
                 if (bytesRead > 0)
                 {
-                    string str = Encoding.Unicode.GetString(byteData, 0, bytesRead); //Obtiene la longitud en bytes de los datos pasados y los transforma en una string
-                    SocketMessage sm = null;
-                    if (str.IsJson())
-                        sm = JsonConvert.DeserializeObject<SocketMessage>(str);
+                    //string str = Encoding.Unicode.GetString(byteData, 0, bytesRead); //Obtiene la longitud en bytes de los datos pasados y los transforma en una string
+                    SocketMessage sm = SocketMessage.Deserialize<SocketMessage>(byteData);
+                    //if (str.IsJson())
+                    //    sm = JsonUtility.FromJson<SocketMessage>(str);
 
                     if (sm != null)
                     {
-                        if (sm.msg == "<conn>")
+                        if (sm.StringValue == "<conn>")
                             routingTable.Add(sm.id, handler);
+                        else if (sm.StringValue == "<close_clients>")
+                        {
+                            routingTable[sm.id].Send(Encoding.Unicode.GetBytes("<close>")); //First, close the client that
+                            foreach (KeyValuePair<int, Socket> soc in routingTable)
+                                if (soc.Key != sm.id) //Then, close the others one
+                                    soc.Value.Send(Encoding.Unicode.GetBytes("<close>"));
+                        }
+                        else if (sm.StringValue == "<client_closed>")
+                        {
+                            closedClients.Add(sm.id);
+                            if (closedClients.Count == routingTable.Count)
+                                CloseServer(); //Close the server, when all the clients has been closed.
+                        }
                         else
                         {
-                            ins.WriteServerLog("---------------------------");
-                            ins.WriteServerLog("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
-                            ins.WriteServerLog("Message: {0}", sm.msg);
-                            ins.WriteServerLog("Sending to the other clients.");
-                            ins.WriteServerLog("---------------------------");
-                            ins.WriteServerLog("");
+                            SocketServerConsole.Log("---------------------------");
+                            SocketServerConsole.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
+                            SocketServerConsole.Log("Message: {0}", sm.msg);
+                            SocketServerConsole.Log("Sending to the other clients.");
+                            SocketServerConsole.Log("---------------------------");
+                            SocketServerConsole.Log("");
 
                             //Send to the other clients
                             foreach (KeyValuePair<int, Socket> soc in routingTable)
                                 if (soc.Key != sm.id)
-                                    soc.Value.Send(Encoding.Unicode.GetBytes(str));
+                                    soc.Value.Send(byteData);
                         }
                     }
                     else
                     {
-                        if (str == "<stop>") //Si recibe FINCONN sale
+                        if (sm.StringValue == "<stop>") //Si recibe FINCONN sale
                             CloseServer();
                         //else if (str.IndexOf("<conn>") > -1)
                         //    routingTable.Add();
                         else
-                            ins.WriteServerLog("Cannot de-encrypt the message!");
+                            Console.WriteLine("Cannot de-encrypt the message!");
                     }
                 }
 
@@ -177,10 +242,14 @@ namespace Dummy_Socket
             }
             catch (Exception ex)
             {
-                ins.WriteServerLog(ex.Message);
+                Console.WriteLine(ex.Message);
             }
         }
 
+        /// <summary>
+        /// Called when [send].
+        /// </summary>
+        /// <param name="ar">The ar.</param>
         public void OnSend(IAsyncResult ar)
         {
             try
@@ -190,21 +259,51 @@ namespace Dummy_Socket
             }
             catch (Exception ex)
             {
-                ins.WriteServerLog(ex.Message);
+                Console.WriteLine(ex.Message);
             }
         }
 
+        /// <summary>
+        /// Closes the server.
+        /// </summary>
         public void CloseServer()
         {
             if (ServerSocket.Connected)
             {
+                Console.WriteLine("Closing server");
                 ServerSocket.Shutdown(SocketShutdown.Receive);
                 ServerSocket.Close();
             }
-#if STATIC_LOG
-            else frmSocket.WriteServerLog("If you want to close something, you have to be first connected!");
-#else
-            else ins.WriteServerLog("If you want to close something, you have to be first connected!");
+            else Console.WriteLine("If you want to close something, you have to be first connected!");
+        }
+
+        public void Dispose()
+        {
+            Console.WriteLine("Disposing server");
+            CloseServer();
+        }
+    }
+
+    public class SocketServerConsole
+    {
+        public static Control printer;
+
+        public static void Log(string str, params object[] str0)
+        {
+            Log(string.Format(str, str0));
+        }
+
+        public static void Log(string str)
+        {
+            Console.WriteLine(str);
+#if LOG_SERVER
+            if (printer != null)
+            {
+                if (printer.InvokeRequired) //De esto hice una versión mejorada
+                    printer.Invoke(new MethodInvoker(() => { printer.Text += str + Environment.NewLine; }));
+            }
+            else
+                Console.WriteLine("You must define 'printer' field from static class 'SocketServerConsole' in order to use this feature.");
 #endif
         }
     }
