@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Windows.Forms;
-using System.Linq;
-using Lerp2API.SafeECalls;
 
 namespace Dummy_Socket
 {
     public enum SocketState { NotStarted, ClientStarted, ServerStarted }
+
     public partial class frmSocket : EnhancedForm<frmSocket>
     {
         public SocketClient client;
@@ -18,6 +18,7 @@ namespace Dummy_Socket
         public int socketID;
 
         private SocketState _state;
+
         public SocketState state
         {
             get
@@ -92,7 +93,7 @@ namespace Dummy_Socket
                 {
                     if (ValidateClient())
                     {
-                        client = new SocketClient(clientIP.Text, (int)clientPort.Value, ClientAction());
+                        client = new SocketClient(clientIP.Text, (int) clientPort.Value, ClientAction());
                         client.socketID = socketID;
                         client.DoConnection();
 
@@ -106,7 +107,7 @@ namespace Dummy_Socket
             {
                 if (ValidateServer())
                 {
-                    server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int)serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
+                    server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int) serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
                     server.socketID = socketID;
 
                     server.ComeAlive();
@@ -128,10 +129,11 @@ namespace Dummy_Socket
 
         private Action ClientAction()
         {
-            return () => {
+            return () =>
+            {
                 byte[] bytes = new byte[1024];
                 string str = client.ReceiveMessage(bytes);
-                SocketMessage sm = JsonUtility.FromJson<SocketMessage>(str);
+                SocketMessage sm = JsonConvert.DeserializeObject<SocketMessage>(str);
                 Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
                 if (receivedMsgs.InvokeRequired)
                     receivedMsgs.Invoke(new MethodInvoker(() => { receivedMsgs.Text += sm.msg; }));
@@ -189,14 +191,17 @@ namespace Dummy_Socket
             }
         }
 #else
+
         public void WriteClientLog(string str, params object[] pars)
         {
             WriteLog(str, true, pars);
         }
+
         public void WriteServerLog(string str, params object[] pars)
         {
             WriteLog(str, false, pars);
         }
+
         private void WriteLog(string str, bool isClient, params object[] pars)
         {
             Console.WriteLine(str);
@@ -214,7 +219,9 @@ namespace Dummy_Socket
                     serverLog.Invoke(new MethodInvoker(() => { serverLog.Text = svLog; }));
             }
         }
+
 #endif
+
         public void SetName(string name)
         {
             clientName.Text = name;
@@ -227,7 +234,7 @@ namespace Dummy_Socket
                 client.CloseConnection(SocketShutdown.Both);
                 client.DisposeSocket();
             }
-            if(state == SocketState.ServerStarted)
+            if (state == SocketState.ServerStarted)
                 server.CloseServer();
         }
 

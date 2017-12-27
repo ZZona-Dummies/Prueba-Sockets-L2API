@@ -1,5 +1,4 @@
-﻿using Lerp2API;
-using Lerp2API.SafeECalls;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,14 +13,14 @@ namespace Dummy_Socket
     {
         //The ClientInfo structure holds the required information about every
         //client connected to the server
-        struct ClientInfo
+        private struct ClientInfo
         {
             public Socket socket;   //Socket of the client
             public string strName;  //Name by which the user logged into the chat room
         }
 
         //The collection of all clients logged into the room (an array of type ClientInfo)
-        ArrayList clientList;
+        private ArrayList clientList;
 
         public const int lerpedPort = 22222;
 
@@ -36,6 +35,7 @@ namespace Dummy_Socket
         public static Dictionary<int, Socket> routingTable = new Dictionary<int, Socket>();
 
         public int socketID;
+
         private frmSocket ins
         {
             get
@@ -96,7 +96,7 @@ namespace Dummy_Socket
                     Console.WriteLine("Waiting for a connection...");
                     ServerSocket.BeginAccept(new AsyncCallback(OnAccept), ServerSocket);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     ins.WriteServerLog(ex.Message);
                 }
@@ -131,7 +131,7 @@ namespace Dummy_Socket
         {
             try
             {
-                Socket handler = (Socket)ar.AsyncState;
+                Socket handler = (Socket) ar.AsyncState;
                 int bytesRead = handler.EndReceive(ar);
 
                 if (bytesRead > 0)
@@ -139,7 +139,7 @@ namespace Dummy_Socket
                     string str = Encoding.Unicode.GetString(byteData, 0, bytesRead); //Obtiene la longitud en bytes de los datos pasados y los transforma en una string
                     SocketMessage sm = null;
                     if (str.IsJson())
-                        sm = JsonUtility.FromJson<SocketMessage>(str);
+                        sm = JsonConvert.DeserializeObject<SocketMessage>(str);
 
                     if (sm != null)
                     {
@@ -169,7 +169,6 @@ namespace Dummy_Socket
                         else
                             ins.WriteServerLog("Cannot de-encrypt the message!");
                     }
-
                 }
 
                 //Continua escuchando, para listar el próximo mensaje, recursividad asíncrona.
@@ -186,7 +185,7 @@ namespace Dummy_Socket
         {
             try
             {
-                Socket client = (Socket)ar.AsyncState;
+                Socket client = (Socket) ar.AsyncState;
                 client.EndSend(ar);
             }
             catch (Exception ex)

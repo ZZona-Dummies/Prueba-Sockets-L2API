@@ -1,5 +1,4 @@
-﻿using Lerp2API.Serializers.Ikillnukes;
-using System.IO;
+﻿using System.IO;
 
 namespace Dummy_Socket
 {
@@ -7,6 +6,7 @@ namespace Dummy_Socket
     {
         public int clientInstances = 2,
                    serverInstances = 1;
+
         public bool startClient,
                     startServer;
 
@@ -14,15 +14,15 @@ namespace Dummy_Socket
 
         public static Configuration Load()
         {
-            Configuration ins = File.Exists(configFile) ? XMLTools.DeserializeFromFile<Configuration>(configFile) : null;
-            if(ins != null)
+            Configuration ins = File.Exists(configFile) ? JSONHandler.DeserializeFromFile<Configuration>(configFile) : null;
+            if (ins != null)
                 return ins;
             return new Configuration();
         }
 
         public static void Save(Configuration ins)
         {
-            XMLTools.SerializeToFile(ins, configFile);
+            JSONHandler.SerializeToFile(configFile, ins);
         }
     }
 }

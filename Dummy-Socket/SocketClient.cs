@@ -1,4 +1,4 @@
-﻿using Lerp2API.SafeECalls;
+﻿using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -10,6 +10,7 @@ namespace Dummy_Socket
     public class SocketMessage
     {
         public int id;
+
         //Name??
         public string msg;
 
@@ -33,6 +34,7 @@ namespace Dummy_Socket
 
         //Esto sobra
         public int socketID;
+
         private frmSocket ins
         {
             get
@@ -71,7 +73,6 @@ namespace Dummy_Socket
             this(ip, port, 1, everyFunc, doConnection)
         { }
 
-
         public SocketClient(string ip, int port, int readEvery, Action everyFunc, bool doConnection = false) :
             this(IPAddress.Parse(ip), port, SocketType.Stream, ProtocolType.Tcp, readEvery, everyFunc, doConnection)
         { }
@@ -99,7 +100,7 @@ namespace Dummy_Socket
             if (doConnection)
             {
                 ClientSocket.Connect(IPEnd);
-                //if (cbTimer != null) 
+                //if (cbTimer != null)
                 StartReceiving();
             }
         }
@@ -123,7 +124,7 @@ namespace Dummy_Socket
             {
                 ClientSocket.Connect(end);
                 StartReceiving();
-                ClientSocket.Send(Encoding.Unicode.GetBytes(JsonUtility.ToJson(new SocketMessage(Id, "<conn>"))));
+                ClientSocket.Send(Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(new SocketMessage(Id, "<conn>"))));
             }
 #if STATIC_LOG
             else frmSocket.WriteClientLog("Destination IP isn't defined!");
@@ -145,7 +146,7 @@ namespace Dummy_Socket
 
         private int SendMessage(string msg, bool breakLine)
         {
-            string message = JsonUtility.ToJson(new SocketMessage(Id, msg));
+            string message = JsonConvert.SerializeObject(new SocketMessage(Id, msg));
             int bytesSend = ClientSocket.Send(Encoding.Unicode.GetBytes(message));
             //if (breakLine) BreakLine(); //Voy a desactivar esto temporalmente
             return bytesSend;
@@ -175,7 +176,7 @@ namespace Dummy_Socket
 
         private void SocketCallback(object obj)
         {
-            ReceiveMessage((byte[])obj);
+            ReceiveMessage((byte[]) obj);
         }
 
         public void CloseConnection(SocketShutdown soShutdown)
@@ -201,6 +202,5 @@ namespace Dummy_Socket
         {
             act();
         }
-
     }
 }
