@@ -1,5 +1,4 @@
 ﻿using DeltaSockets;
-using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -56,14 +55,6 @@ namespace Dummy_Socket
             }
         }
 
-        public TextBox txtServerLog
-        {
-            get
-            {
-                return serverLog;
-            }
-        }
-
         public const string notValidClientConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña clientes.",
                             notValidServerConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña servidores.";
 
@@ -103,13 +94,13 @@ namespace Dummy_Socket
                     if (ValidateClient())
                     {
                         client = new SocketClient(clientIP.Text, (int) clientPort.Value, ClientAction());
-                        //client.socketID = socketID;
+                        client.myLogger = new SocketClientConsole(receivedMsgs, false);
                         client.DoConnection();
 
                         succ = true;
                     }
                     else
-                        WriteClientLog(notValidClientConn);
+                        client.myLogger.LogError(notValidClientConn);
                 }
             }
             else
@@ -117,17 +108,13 @@ namespace Dummy_Socket
                 if (ValidateServer())
                 {
                     server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int) serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
-                    //server.socketID = socketID;
-
+                    server.myLogger = new SocketServerConsole(serverLog);
                     server.ComeAlive();
-                    //server.StartListening();
-
-                    //server.ServerCallback = new AsyncCallback(server.AcceptCallback);
 
                     succ = true;
                 }
                 else
-                    WriteServerLog(notValidServerConn);
+                    client.myLogger.LogError(notValidServerConn);
             }
             if (succ)
             {
@@ -142,18 +129,13 @@ namespace Dummy_Socket
             {
                 byte[] bytes = new byte[1024];
 
-                //string str = client.ReceiveMessage(bytes);
-                //SocketMessage sm = JsonConvert.DeserializeObject<SocketMessage>(str);
-                //Cambios...
-
                 SocketMessage sm = null;
                 if (client.ReceiveData(out sm))
                     Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
                 else
                     Console.WriteLine("Error receiving data!");
 
-                if (receivedMsgs.InvokeRequired) //De esto hice una versión mejorada
-                    receivedMsgs.Invoke(new MethodInvoker(() => { receivedMsgs.Text += sm.msg + Environment.NewLine; }));
+                client.myLogger.Log(sm.msg.ToString());
             };
         }
 
@@ -182,66 +164,6 @@ namespace Dummy_Socket
             client.SendData(clientMsg.Text);
             clientMsg.Text = "";
         }
-
-        //Obsoleto
-
-#if STATIC_LOG
-        public static void WriteClientLog(string str)
-        {
-            WriteLog(str, true);
-        }
-        public static void WriteServerLog(string str)
-        {
-            WriteLog(str, false);
-        }
-        private static void WriteLog(string str, bool isClient)
-        {
-            Console.WriteLine(str);
-            str += Environment.NewLine;
-            if (isClient)
-            {
-                foreach (frmSocket so in frmMain.socketIns.Values.Where(x => x.isClient).Select(x => x.instance))
-                    so.clientLog.Text += str;
-            }
-            else
-            {
-                foreach (frmSocket so in frmMain.socketIns.Values.Where(x => !x.isClient).Select(x => x.instance))
-                    so.serverLog.Text += str;
-            }
-        }
-#else
-
-        public void WriteClientLog(string str, params object[] pars)
-        {
-            WriteLog(str, true, pars);
-        }
-
-        public void WriteServerLog(string str, params object[] pars)
-        {
-            WriteLog(str, false, pars);
-        }
-
-        private void WriteLog(string str, bool isClient, params object[] pars)
-        {
-            Console.WriteLine(str);
-            str += Environment.NewLine;
-            if (isClient)
-            {
-                clLog += pars != null ? string.Format(str, pars) : str;
-                if (clientLog.InvokeRequired)
-                    clientLog.Invoke(new MethodInvoker(() => { clientLog.Text = clLog; }));
-            }
-            else
-            {
-                svLog += pars != null ? string.Format(str, pars) : str;
-                if (serverLog.InvokeRequired)
-                    serverLog.Invoke(new MethodInvoker(() => { serverLog.Text = svLog; }));
-            }
-        }
-
-#endif
-
-        //End obsoleto
 
         public void SetName(string name)
         {

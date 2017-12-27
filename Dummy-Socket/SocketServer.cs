@@ -29,6 +29,8 @@ namespace DeltaSockets
             public string strName;  //Name by which the user logged into the chat room
         }
 
+        public SocketServerConsole myLogger = new SocketServerConsole(null);
+
         //The collection of all clients logged into the room (an array of type ClientInfo)
         private ArrayList clientList;
 
@@ -212,12 +214,12 @@ namespace DeltaSockets
                         }
                         else
                         {
-                            SocketServerConsole.Log("---------------------------");
-                            SocketServerConsole.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
-                            SocketServerConsole.Log("Message: {0}", sm.msg);
-                            SocketServerConsole.Log("Sending to the other clients.");
-                            SocketServerConsole.Log("---------------------------");
-                            SocketServerConsole.Log("");
+                            myLogger.Log("---------------------------");
+                            myLogger.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
+                            myLogger.Log("Message: {0}", sm.msg);
+                            myLogger.Log("Sending to the other clients.");
+                            myLogger.Log("---------------------------");
+                            myLogger.Log("");
 
                             //Send to the other clients
                             foreach (KeyValuePair<int, Socket> soc in routingTable)
@@ -286,14 +288,23 @@ namespace DeltaSockets
 
     public class SocketServerConsole
     {
-        public static Control printer;
+        private readonly Control printer;
 
-        public static void Log(string str, params object[] str0)
+        private SocketServerConsole()
+        {
+        }
+
+        public SocketServerConsole(Control c)
+        {
+            printer = c;
+        }
+
+        public void Log(string str, params object[] str0)
         {
             Log(string.Format(str, str0));
         }
 
-        public static void Log(string str)
+        public void Log(string str)
         {
             Console.WriteLine(str);
 #if LOG_SERVER
@@ -303,7 +314,7 @@ namespace DeltaSockets
                     printer.Invoke(new MethodInvoker(() => { printer.Text += str + Environment.NewLine; }));
             }
             else
-                Console.WriteLine("You must define 'printer' field from static class 'SocketServerConsole' in order to use this feature.");
+                Console.WriteLine("You must define 'myLogger' field of type 'SocketServerConsole' inside 'SocketServer' in order to use this feature.");
 #endif
         }
     }

@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Windows.Forms;
+using Timer = System.Threading.Timer;
 
 namespace DeltaSockets
 {
@@ -117,6 +116,8 @@ namespace DeltaSockets
     /// </summary>
     public class SocketClient
     {
+        public SocketClientConsole myLogger = new SocketClientConsole(null);
+
         /// <summary>
         /// The client socket
         /// </summary>
@@ -247,12 +248,9 @@ namespace DeltaSockets
 
             Id = ClientSocket.GetHashCode();
 
-            //logger = new Logger(Path.Combine(Path.GetDirectoryName(Path.Combine(Application.dataPath, LerpedCore.defaultLogFilePath)), fileLog));
-
             if (doConnection)
             {
                 ClientSocket.Connect(IPEnd);
-                //if (cbTimer != null)
                 StartReceiving();
             }
         }
@@ -327,17 +325,9 @@ namespace DeltaSockets
                     bytesRec = ClientSocket.Receive(bytes);
                 }
 
-                // Converts byte array to string
-                //msg = Encoding.Unicode.GetString(bytes, 0, bytesRec);
-
                 // Continues to read the data till data isn't available
                 while (ClientSocket.Available > 0)
-                {
                     bytesRec = ClientSocket.Receive(bytes);
-                    //Console.WriteLine(bytesRec);
-                    //Downloading data... Don't do more
-                    //msg += Encoding.Unicode.GetString(bytes, 0, bytesRec);
-                }
 
                 SocketMessage sm = (SocketMessage) SocketMessage.Deserialize<object>(bytes);
                 msg = sm;
@@ -361,11 +351,6 @@ namespace DeltaSockets
                 return false;
             }
         }
-
-        /*private void SocketCallback(object obj)
-        {
-            ReceiveMessage((byte[])obj);
-        }*/
 
         private void CloseConnection(SocketShutdown soShutdown)
         {
@@ -401,6 +386,64 @@ namespace DeltaSockets
         private void Timering(object stateInfo)
         {
             act();
+        }
+    }
+
+    public class SocketClientConsole
+    {
+        public Control errorPrinter;
+
+        private readonly Control printer;
+        private bool writeLines = true;
+
+        private SocketClientConsole()
+        {
+        }
+
+        public SocketClientConsole(Control c, bool wl = true)
+        {
+            printer = c;
+            writeLines = wl;
+        }
+
+        public void Log(string str, params object[] str0)
+        {
+            Log(string.Format(str, str0));
+        }
+
+        public void Log(string str)
+        {
+            if (writeLines)
+                Console.WriteLine("Client Message: " + str);
+#if LOG_CLIENT
+            if (printer != null)
+            {
+                if (printer.InvokeRequired) //De esto hice una versión mejorada
+                    printer.Invoke(new MethodInvoker(() => { printer.Text += str + Environment.NewLine; }));
+            }
+            else
+                Console.WriteLine("You must define 'myLogger' field of type 'SocketCientConsole' inside 'SocketClient' in order to use this feature.");
+#endif
+        }
+
+        public void LogError(string str, params object[] str0)
+        {
+            LogError(string.Format(str, str0));
+        }
+
+        public void LogError(string str)
+        {
+            if (writeLines)
+                Console.WriteLine("Client Error Message: " + str);
+#if LOG_CLIENT
+            if (errorPrinter != null)
+            {
+                if (errorPrinter.InvokeRequired) //De esto hice una versión mejorada
+                    errorPrinter.Invoke(new MethodInvoker(() => { errorPrinter.Text += str + Environment.NewLine; }));
+            }
+            else
+                Console.WriteLine("You must define 'myLogger.errorPrinter' field of type 'SocketCientConsole' inside 'SocketClient' in order to use this feature.");
+#endif
         }
     }
 }
