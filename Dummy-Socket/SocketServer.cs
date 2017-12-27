@@ -14,25 +14,7 @@ namespace DeltaSockets
     /// </summary>
     public class SocketServer
     {
-        //The ClientInfo structure holds the required information about every
-        //client connected to the server
-        private struct ClientInfo
-        {
-            /// <summary>
-            /// The socket
-            /// </summary>
-            public Socket socket;   //Socket of the client
-
-            /// <summary>
-            /// The string name
-            /// </summary>
-            public string strName;  //Name by which the user logged into the chat room
-        }
-
         public SocketServerConsole myLogger = new SocketServerConsole(null);
-
-        //The collection of all clients logged into the room (an array of type ClientInfo)
-        private ArrayList clientList;
 
         /// <summary>
         /// The lerped port
@@ -72,11 +54,9 @@ namespace DeltaSockets
         /// </summary>
         public static Dictionary<int, Socket> routingTable = new Dictionary<int, Socket>();
 
-        private static List<int> closedClients = new List<int>();
+        private readonly static List<int> closedClients = new List<int>();
 
         private static bool debug;
-
-        private AsyncCallback _callback;
 
         //private Logger logger;
 

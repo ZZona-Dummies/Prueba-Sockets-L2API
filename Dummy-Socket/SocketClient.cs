@@ -134,11 +134,13 @@ namespace DeltaSockets
         public int Port, Id;
 
         private IPEndPoint _endpoint;
-        private byte[] socketBuffer; //I will keep this static, but I think I will have problems
-        private Timer task;
-        private Action act;
-        private int period = 1;
-        //private Logger logger;
+
+        //I think I will delete this later
+        private readonly byte[] socketBuffer;
+
+        private readonly Timer task;
+        private readonly Action act;
+        private readonly int period = 1;
 
         internal IPEndPoint IPEnd
         {
@@ -394,7 +396,7 @@ namespace DeltaSockets
         public Control errorPrinter;
 
         private readonly Control printer;
-        private bool writeLines = true;
+        private readonly bool writeLines = true;
 
         private SocketClientConsole()
         {

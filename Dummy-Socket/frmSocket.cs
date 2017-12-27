@@ -58,8 +58,6 @@ namespace Dummy_Socket
         public const string notValidClientConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña clientes.",
                             notValidServerConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña servidores.";
 
-        private string svLog, clLog;
-
         public frmSocket()
         {
             InitializeComponent();
