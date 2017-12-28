@@ -14,7 +14,7 @@ namespace DeltaSockets
     /// Class SocketMessage.
     /// </summary>
     [Serializable]
-    public sealed partial class SocketMessage
+    public class SocketMessage
     {
         public string StringValue
         {
@@ -114,7 +114,7 @@ namespace DeltaSockets
     /// <summary>
     /// Class SocketClient.
     /// </summary>
-    public sealed partial class SocketClient
+    public class SocketClient
     {
         public SocketClientConsole myLogger = new SocketClientConsole(null);
 
@@ -380,7 +380,7 @@ namespace DeltaSockets
         }
     }
 
-    public sealed partial class SocketClientConsole
+    public class SocketClientConsole
     {
         public Control errorPrinter;
 

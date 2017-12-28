@@ -12,7 +12,7 @@ namespace DeltaSockets
     /// <summary>
     /// Class SocketServer.
     /// </summary>
-    public sealed partial class SocketServer
+    public class SocketServer
     {
         public SocketServerConsole myLogger = new SocketServerConsole(null);
 
@@ -176,38 +176,7 @@ namespace DeltaSockets
                     //    sm = JsonUtility.FromJson<SocketMessage>(str);
 
                     if (sm != null)
-                    {
-                        switch(sm.StringValue)
-                        {
-                            case "<conn>":
-                                routingTable.Add(sm.id, handler);
-                                break;
-                            case "<close_clients>":
-                                routingTable[sm.id].Send(Encoding.Unicode.GetBytes("<close>")); //First, close the client that
-                                foreach (KeyValuePair<int, Socket> soc in routingTable)
-                                    if (soc.Key != sm.id) //Then, close the others one
-                                        soc.Value.Send(Encoding.Unicode.GetBytes("<close>"));
-                                break;
-                            case "<client_closed>":
-                                closedClients.Add(sm.id);
-                                if (closedClients.Count == routingTable.Count)
-                                    CloseServer(); //Close the server, when all the clients has been closed.
-                                break;
-                            default:
-                                myLogger.Log("---------------------------");
-                                myLogger.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
-                                myLogger.Log("Message: {0}", sm.msg);
-                                myLogger.Log("Sending to the other clients.");
-                                myLogger.Log("---------------------------");
-                                myLogger.Log("");
-
-                                //Send to the other clients
-                                foreach (KeyValuePair<int, Socket> soc in routingTable)
-                                    if (soc.Key != sm.id)
-                                        soc.Value.Send(byteData);
-                                break;
-                        }
-                    }
+                        SwitchValue(sm, handler, bytesRead);
                     else
                     {
                         if (sm.StringValue == "<stop>") //Si recibe FINCONN sale
@@ -224,6 +193,40 @@ namespace DeltaSockets
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+            }
+        }
+
+        private void SwitchValue(SocketMessage sm, Socket handler, int bytesRead)
+        {
+            switch (sm.StringValue)
+            {
+                case "<conn>":
+                    routingTable.Add(sm.id, handler);
+                    break;
+                case "<close_clients>":
+                    routingTable[sm.id].Send(Encoding.Unicode.GetBytes("<close>")); //First, close the client that
+                    foreach (KeyValuePair<int, Socket> soc in routingTable)
+                        if (soc.Key != sm.id) //Then, close the others one
+                            soc.Value.Send(Encoding.Unicode.GetBytes("<close>"));
+                    break;
+                case "<client_closed>":
+                    closedClients.Add(sm.id);
+                    if (closedClients.Count == routingTable.Count)
+                        CloseServer(); //Close the server, when all the clients has been closed.
+                    break;
+                default:
+                    myLogger.Log("---------------------------");
+                    myLogger.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
+                    myLogger.Log("Message: {0}", sm.msg);
+                    myLogger.Log("Sending to the other clients.");
+                    myLogger.Log("---------------------------");
+                    myLogger.Log("");
+
+                    //Send to the other clients
+                    foreach (KeyValuePair<int, Socket> soc in routingTable)
+                        if (soc.Key != sm.id)
+                            soc.Value.Send(byteData);
+                    break;
             }
         }
 
@@ -265,7 +268,7 @@ namespace DeltaSockets
         }
     }
 
-    public sealed partial class SocketServerConsole
+    public class SocketServerConsole
     {
         private readonly Control printer;
 
