@@ -12,7 +12,7 @@ namespace DeltaSockets
     /// <summary>
     /// Class SocketServer.
     /// </summary>
-    public class SocketServer
+    public sealed class SocketServer
     {
         public SocketServerConsole myLogger = new SocketServerConsole(null);
 
@@ -265,7 +265,7 @@ namespace DeltaSockets
         }
     }
 
-    public class SocketServerConsole
+    public sealed partial class SocketServerConsole
     {
         private readonly Control printer;
 
