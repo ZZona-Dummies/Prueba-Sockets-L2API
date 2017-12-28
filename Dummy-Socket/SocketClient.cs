@@ -161,7 +161,7 @@ namespace DeltaSockets
         /// </summary>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
         public SocketClient(bool doConnection = false) :
-            this(IPAddress.Loopback, SocketServer.DefPort, SocketType.Stream, ProtocolType.Tcp, 1, null, doConnection)
+            this(IPAddress.Loopback, SocketServer.DefPort, SocketType.Stream, ProtocolType.Tcp, -1, null, doConnection)
         { }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace DeltaSockets
         /// <param name="everyFunc">The every function.</param>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
         public SocketClient(Action everyFunc, bool doConnection = false) :
-            this(IPAddress.Loopback, SocketServer.DefPort, SocketType.Stream, ProtocolType.Tcp, 1, everyFunc, doConnection)
+            this(IPAddress.Loopback, SocketServer.DefPort, SocketType.Stream, ProtocolType.Tcp, -1, everyFunc, doConnection)
         { }
 
         /// <summary>
@@ -180,30 +180,15 @@ namespace DeltaSockets
         /// <param name="port">The port.</param>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
         public SocketClient(string ip, int port, bool doConnection = false) :
-            this(ip, port, -1, null, doConnection)
+            this(ip, port, null, -1, doConnection)
         { }
 
         public SocketClient(IPAddress ip, int port, bool doConnection = false) :
             this(ip, port, SocketType.Stream, ProtocolType.Tcp, -1, null, doConnection)
         { }
 
-        public SocketClient(IPAddress ip, int port, Action everyFunc, bool doConnection = false) :
-            this(ip, port, SocketType.Stream, ProtocolType.Tcp, 1, everyFunc, doConnection)
-        { }
-
-        public SocketClient(IPAddress ip, int port, int readEvery, Action everyFunc, bool doConnection = false) :
+        public SocketClient(IPAddress ip, int port, Action everyFunc, int readEvery = -1, bool doConnection = false) :
             this(ip, port, SocketType.Stream, ProtocolType.Tcp, readEvery, everyFunc, doConnection)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SocketClient"/> class.
-        /// </summary>
-        /// <param name="ip">The ip.</param>
-        /// <param name="port">The port.</param>
-        /// <param name="everyFunc">The every function.</param>
-        /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
-        public SocketClient(string ip, int port, Action everyFunc, bool doConnection = false) :
-            this(ip, port, 1, everyFunc, doConnection)
         { }
 
         /// <summary>
@@ -214,7 +199,7 @@ namespace DeltaSockets
         /// <param name="readEvery">The read every.</param>
         /// <param name="everyFunc">The every function.</param>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
-        public SocketClient(string ip, int port, int readEvery, Action everyFunc, bool doConnection = false) :
+        public SocketClient(string ip, int port, Action everyFunc, int readEvery = -1, bool doConnection = false) :
             this(IPAddress.Parse(ip), port, SocketType.Stream, ProtocolType.Tcp, readEvery, everyFunc, doConnection)
         { }
 
@@ -262,8 +247,7 @@ namespace DeltaSockets
         /// </summary>
         protected void StartReceiving()
         {
-            if (task != null)
-                task.Change(5, period);
+            _Receiving(period);
         }
 
         /// <summary>
@@ -271,8 +255,13 @@ namespace DeltaSockets
         /// </summary>
         protected void StopReceiving()
         {
+            _Receiving();
+        }
+
+        private void _Receiving(int p = 0)
+        {
             if (task != null)
-                task.Change(5, 0);
+                task.Change(5, p);
         }
 
         /// <summary>

@@ -42,7 +42,7 @@ namespace DeltaSockets
         public int Port;
 
         private IPEndPoint _endpoint;
-        private byte[] byteData = new byte[1024];
+        private readonly byte[] byteData = new byte[1024];
 
         /// <summary>
         /// All done
@@ -177,42 +177,41 @@ namespace DeltaSockets
 
                     if (sm != null)
                     {
-                        if (sm.StringValue == "<conn>")
-                            routingTable.Add(sm.id, handler);
-                        else if (sm.StringValue == "<close_clients>")
+                        switch(sm.StringValue)
                         {
-                            routingTable[sm.id].Send(Encoding.Unicode.GetBytes("<close>")); //First, close the client that
-                            foreach (KeyValuePair<int, Socket> soc in routingTable)
-                                if (soc.Key != sm.id) //Then, close the others one
-                                    soc.Value.Send(Encoding.Unicode.GetBytes("<close>"));
-                        }
-                        else if (sm.StringValue == "<client_closed>")
-                        {
-                            closedClients.Add(sm.id);
-                            if (closedClients.Count == routingTable.Count)
-                                CloseServer(); //Close the server, when all the clients has been closed.
-                        }
-                        else
-                        {
-                            myLogger.Log("---------------------------");
-                            myLogger.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
-                            myLogger.Log("Message: {0}", sm.msg);
-                            myLogger.Log("Sending to the other clients.");
-                            myLogger.Log("---------------------------");
-                            myLogger.Log("");
+                            case "<conn>":
+                                routingTable.Add(sm.id, handler);
+                                break;
+                            case "<close_clients>":
+                                routingTable[sm.id].Send(Encoding.Unicode.GetBytes("<close>")); //First, close the client that
+                                foreach (KeyValuePair<int, Socket> soc in routingTable)
+                                    if (soc.Key != sm.id) //Then, close the others one
+                                        soc.Value.Send(Encoding.Unicode.GetBytes("<close>"));
+                                break;
+                            case "<client_closed>":
+                                closedClients.Add(sm.id);
+                                if (closedClients.Count == routingTable.Count)
+                                    CloseServer(); //Close the server, when all the clients has been closed.
+                                break;
+                            default:
+                                myLogger.Log("---------------------------");
+                                myLogger.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
+                                myLogger.Log("Message: {0}", sm.msg);
+                                myLogger.Log("Sending to the other clients.");
+                                myLogger.Log("---------------------------");
+                                myLogger.Log("");
 
-                            //Send to the other clients
-                            foreach (KeyValuePair<int, Socket> soc in routingTable)
-                                if (soc.Key != sm.id)
-                                    soc.Value.Send(byteData);
+                                //Send to the other clients
+                                foreach (KeyValuePair<int, Socket> soc in routingTable)
+                                    if (soc.Key != sm.id)
+                                        soc.Value.Send(byteData);
+                                break;
                         }
                     }
                     else
                     {
                         if (sm.StringValue == "<stop>") //Si recibe FINCONN sale
                             CloseServer();
-                        //else if (str.IndexOf("<conn>") > -1)
-                        //    routingTable.Add();
                         else
                             Console.WriteLine("Cannot de-encrypt the message!");
                     }
