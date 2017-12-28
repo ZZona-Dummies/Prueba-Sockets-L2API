@@ -114,7 +114,7 @@ namespace DeltaSockets
     /// <summary>
     /// Class SocketClient.
     /// </summary>
-    public sealed class SocketClient
+    public sealed partial class SocketClient
     {
         public SocketClientConsole myLogger = new SocketClientConsole(null);
 

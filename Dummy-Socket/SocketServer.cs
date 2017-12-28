@@ -12,7 +12,7 @@ namespace DeltaSockets
     /// <summary>
     /// Class SocketServer.
     /// </summary>
-    public sealed class SocketServer
+    public sealed partial class SocketServer
     {
         public SocketServerConsole myLogger = new SocketServerConsole(null);
 
