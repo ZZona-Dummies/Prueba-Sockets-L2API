@@ -1,13 +1,13 @@
-﻿using System;
+﻿using DeltaSockets;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Windows.Forms;
-using System.Linq;
-using Lerp2API.SafeECalls;
 
 namespace Dummy_Socket
 {
     public enum SocketState { NotStarted, ClientStarted, ServerStarted }
+
     public partial class frmSocket : EnhancedForm<frmSocket>
     {
         public SocketClient client;
@@ -18,6 +18,7 @@ namespace Dummy_Socket
         public int socketID;
 
         private SocketState _state;
+
         public SocketState state
         {
             get
@@ -57,8 +58,6 @@ namespace Dummy_Socket
         public const string notValidClientConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña clientes.",
                             notValidServerConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña servidores.";
 
-        private string svLog, clLog;
-
         public frmSocket()
         {
             InitializeComponent();
@@ -92,32 +91,28 @@ namespace Dummy_Socket
                 {
                     if (ValidateClient())
                     {
-                        client = new SocketClient(clientIP.Text, (int)clientPort.Value, ClientAction());
-                        client.socketID = socketID;
+                        client = new SocketClient(clientIP.Text, (int) clientPort.Value, ClientAction());
+                        client.myLogger = new SocketClientConsole(receivedMsgs, false);
                         client.DoConnection();
 
                         succ = true;
                     }
                     else
-                        WriteClientLog(notValidClientConn);
+                        client.myLogger.LogError(notValidClientConn);
                 }
             }
             else
             {
                 if (ValidateServer())
                 {
-                    server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int)serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
-                    server.socketID = socketID;
-
+                    server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int) serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
+                    server.myLogger = new SocketServerConsole(serverLog);
                     server.ComeAlive();
-                    //server.StartListening();
-
-                    //server.ServerCallback = new AsyncCallback(server.AcceptCallback);
 
                     succ = true;
                 }
                 else
-                    WriteServerLog(notValidServerConn);
+                    client.myLogger.LogError(notValidServerConn);
             }
             if (succ)
             {
@@ -128,13 +123,17 @@ namespace Dummy_Socket
 
         private Action ClientAction()
         {
-            return () => {
+            return () =>
+            {
                 byte[] bytes = new byte[1024];
-                string str = client.ReceiveMessage(bytes);
-                SocketMessage sm = JsonUtility.FromJson<SocketMessage>(str);
-                Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
-                if (receivedMsgs.InvokeRequired)
-                    receivedMsgs.Invoke(new MethodInvoker(() => { receivedMsgs.Text += sm.msg; }));
+
+                SocketMessage sm = null;
+                if (client.ReceiveData(out sm))
+                    Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
+                else
+                    Console.WriteLine("Error receiving data!");
+
+                client.myLogger.Log(sm.msg.ToString());
             };
         }
 
@@ -160,61 +159,10 @@ namespace Dummy_Socket
 
         private void sendMsg_Click(object sender, EventArgs e)
         {
-            client.WriteLine(clientMsg.Text);
+            client.SendData(clientMsg.Text);
             clientMsg.Text = "";
         }
 
-#if STATIC_LOG
-        public static void WriteClientLog(string str)
-        {
-            WriteLog(str, true);
-        }
-        public static void WriteServerLog(string str)
-        {
-            WriteLog(str, false);
-        }
-        private static void WriteLog(string str, bool isClient)
-        {
-            Console.WriteLine(str);
-            str += Environment.NewLine;
-            if (isClient)
-            {
-                foreach (frmSocket so in frmMain.socketIns.Values.Where(x => x.isClient).Select(x => x.instance))
-                    so.clientLog.Text += str;
-            }
-            else
-            {
-                foreach (frmSocket so in frmMain.socketIns.Values.Where(x => !x.isClient).Select(x => x.instance))
-                    so.serverLog.Text += str;
-            }
-        }
-#else
-        public void WriteClientLog(string str, params object[] pars)
-        {
-            WriteLog(str, true, pars);
-        }
-        public void WriteServerLog(string str, params object[] pars)
-        {
-            WriteLog(str, false, pars);
-        }
-        private void WriteLog(string str, bool isClient, params object[] pars)
-        {
-            Console.WriteLine(str);
-            str += Environment.NewLine;
-            if (isClient)
-            {
-                clLog += pars != null ? string.Format(str, pars) : str;
-                if (clientLog.InvokeRequired)
-                    clientLog.Invoke(new MethodInvoker(() => { clientLog.Text = clLog; }));
-            }
-            else
-            {
-                svLog += pars != null ? string.Format(str, pars) : str;
-                if (serverLog.InvokeRequired)
-                    serverLog.Invoke(new MethodInvoker(() => { serverLog.Text = svLog; }));
-            }
-        }
-#endif
         public void SetName(string name)
         {
             clientName.Text = name;
@@ -223,11 +171,8 @@ namespace Dummy_Socket
         private void frmSocket_Closing(object sender, FormClosingEventArgs e)
         {
             if (state == SocketState.ClientStarted)
-            {
-                client.CloseConnection(SocketShutdown.Both);
-                client.DisposeSocket();
-            }
-            if(state == SocketState.ServerStarted)
+                client.End();
+            if (state == SocketState.ServerStarted)
                 server.CloseServer();
         }
 

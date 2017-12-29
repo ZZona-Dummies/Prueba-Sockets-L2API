@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DeltaSockets;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -38,6 +39,9 @@ namespace Dummy_Socket
 
         private void button1_Click(object sender, EventArgs e)
         {
+            //if (SocketServerConsole.printer != null)
+            //    throw new Exception("You must not open more than one server! If you do, please modify the source code.");
+
             frmSocket socketForm = new frmSocket();
             socketForm.Show();
             socketForm.ShowServerTab();
@@ -78,7 +82,7 @@ namespace Dummy_Socket
                         so.disableAutoName = true;
                         so.Show();
                         so.ShowClientTab();
-                        so.SetName("Client"+i);
+                        so.SetName("Client" + i);
                         so.Start(true);
                     }
             }
