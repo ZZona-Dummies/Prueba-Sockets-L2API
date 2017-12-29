@@ -1,11 +1,8 @@
 ﻿using System;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 using Timer = System.Threading.Timer;
 
 namespace DeltaSockets
@@ -30,7 +27,17 @@ namespace DeltaSockets
         /// <summary>
         /// The port
         /// </summary>
-        public int Port, Id;
+        public int Port,
+                   Id;
+
+        private SocketState _state;
+        public SocketState myState
+        {
+            get
+            {
+                return _state;
+            }
+        }
 
         private IPEndPoint _endpoint;
 
@@ -38,8 +45,6 @@ namespace DeltaSockets
         private readonly Timer task;
         private readonly Action act;
         private readonly int period = 1;
-
-        //private byte[] bytes;
 
         internal IPEndPoint IPEnd
         {
@@ -135,10 +140,7 @@ namespace DeltaSockets
             Id = ClientSocket.GetHashCode();
 
             if (doConnection)
-            {
-                ClientSocket.Connect(IPEnd);
-                StartReceiving();
-            }
+                DoConnection();
         }
 
         /// <summary>
@@ -168,14 +170,23 @@ namespace DeltaSockets
         /// </summary>
         public void DoConnection()
         {
-            IPEndPoint end = IPEnd;
-            if (end != null)
+            if (IPEnd != null)
             {
-                ClientSocket.Connect(end);
-                StartReceiving();
-                ClientSocket.Send(SocketManager.Serialize(Id, "<conn>"));
+                try
+                {
+                    ClientSocket.Connect(IPEnd);
+                    StartReceiving();
+                    ClientSocket.Send(SocketManager.Serialize(Id, "<conn>"));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception ocurred while starting CLIENT: " + ex);
+                    return;
+                }
+                _state = SocketState.ClientStarted;
             }
-            else Console.WriteLine("Destination IP isn't defined!");
+            else
+                Console.WriteLine("Destination IP isn't defined!");
         }
 
         public int SendData(object msg)
@@ -217,7 +228,15 @@ namespace DeltaSockets
                 byte[] bytes = new byte[1024];
 
                 if (!ClientSocket.Equals(null))
-                    bytesRec = ClientSocket.Receive(bytes);
+                {
+                    Console.WriteLine("Server requesting this client to stop, stopping this client! (#{0})", Id);
+
+                    //bytesRec = ClientSocket.Receive(bytes);
+
+                    Stop(); //Don't stop, the server will do it for this client.
+                    msg = null;
+                    return false;
+                }
 
                 // Continues to read the data till data isn't available
                 while (ClientSocket.Available > 0)
@@ -233,12 +252,9 @@ namespace DeltaSockets
                 {
                     Console.WriteLine("Closing connection...");
                     SendData("<client_closed>");
-                    End();
+                    Stop();
                     return false;
                 }
-
-                //Clean the buffer
-                //Array.Clear(bytes, 0, bytes.Length);
 
                 return true;
             }
@@ -247,7 +263,7 @@ namespace DeltaSockets
                 Console.WriteLine("Exception ocurred while receiving data! " + ex.ToString());
                 msg = null; //Dead silence.
                 SendData("<client_closed>");
-                End();
+                Stop();
                 return false;
             }
         }
@@ -262,7 +278,8 @@ namespace DeltaSockets
             if (ClientSocket.Connected)
             {
                 ClientSocket.Disconnect(false);
-                ClientSocket.Shutdown(soShutdown);
+                if (ClientSocket.Connected)
+                    ClientSocket.Shutdown(soShutdown);
             }
         }
 
@@ -277,10 +294,25 @@ namespace DeltaSockets
         /// <summary>
         /// Ends this instance.
         /// </summary>
-        public void End()
+        public void Stop()
         {
-            CloseConnection(SocketShutdown.Both);
-            Dispose();
+            if (_state == SocketState.ClientStarted)
+            {
+                try
+                {
+                    Console.WriteLine("Closing client");
+
+                    _state = SocketState.ClientStopped;
+                    CloseConnection(SocketShutdown.Both);
+                    Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception ocurred while trying to stop client: " + ex);
+                }
+            }
+            else
+                Console.WriteLine("Client cannot be stopped because it hasn't been started!");
         }
 
         private void Timering(object stateInfo)

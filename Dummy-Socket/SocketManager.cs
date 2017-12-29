@@ -7,7 +7,17 @@ namespace DeltaSockets
 {
     public enum SocketDbgType
     {
-        Client, Server
+        Client,
+        Server
+    }
+
+    public enum SocketState
+    {
+        NonStarted,
+        ClientStarted,
+        ServerStarted,
+        ClientStopped,
+        ServerStopped
     }
 
     /// <summary>

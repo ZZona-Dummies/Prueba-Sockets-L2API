@@ -41,6 +41,15 @@ namespace DeltaSockets
         /// </summary>
         public int Port;
 
+        private SocketState _state;
+        public SocketState myState
+        {
+            get
+            {
+                return _state;
+            }
+        }
+
         private IPEndPoint _endpoint;
         private byte[] byteData = new byte[minBufferSize];
 
@@ -56,11 +65,7 @@ namespace DeltaSockets
 
         private readonly static List<int> closedClients = new List<int>();
 
-        //private static Tuple<ulong, List<byte>>
-
         private static bool debug;
-
-        //private Logger logger;
 
         internal IPEndPoint IPEnd
         {
@@ -118,7 +123,8 @@ namespace DeltaSockets
 
             ServerSocket = new Socket(ipAddr.AddressFamily, sType, pType);
 
-            if (doConnection) ServerSocket.Bind(IPEnd);
+            if (doConnection)
+                ComeAlive();
         }
 
         /// <summary>
@@ -130,11 +136,20 @@ namespace DeltaSockets
             {
                 try
                 {
-                    ServerSocket.Bind(IPEnd);
-                    ServerSocket.Listen(10); //El servidor se prepara para recebir la conexion de 10 clientes simultaneamente
+                    try
+                    {
+                        ServerSocket.Bind(IPEnd);
+                        ServerSocket.Listen(10); //El servidor se prepara para recebir la conexion de 10 clientes simultaneamente
 
-                    Console.WriteLine("Waiting for a connection...");
-                    ServerSocket.BeginAccept(new AsyncCallback(OnAccept), ServerSocket);
+                        Console.WriteLine("Waiting for a connection...");
+                        ServerSocket.BeginAccept(new AsyncCallback(OnAccept), ServerSocket);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Exception ocurred while starting CLIENT: " + ex);
+                        return;
+                    }
+                    _state = SocketState.ServerStarted;
                 }
                 catch (Exception ex)
                 {
@@ -159,7 +174,7 @@ namespace DeltaSockets
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine("Exception ocurred while accepting in async server: " + ex.Message);
             }
         }
 
@@ -220,24 +235,26 @@ namespace DeltaSockets
                     routingTable.Add(sm.id, handler);
                     break;
                 case "<close_clients>":
-                    routingTable[sm.id].Send(Encoding.Unicode.GetBytes("<close>")); //First, close the client that
-                    foreach (KeyValuePair<int, Socket> soc in routingTable)
-                        if (soc.Key != sm.id) //Then, close the others one
-                            soc.Value.Send(Encoding.Unicode.GetBytes("<close>"));
+                    CloseAllClients();
                     break;
                 case "<client_closed>":
                     closedClients.Add(sm.id);
-                    if (closedClients.Count == routingTable.Count)
-                        CloseServer(); //Close the server, when all the clients has been closed.
+                    CloseServerAfterClientsClose();
                     break;
                 case "<stop>":
-                    CloseServer();
+                    CloseAllClients();
+                    break;
+                case "<unpolite_stop>":
+                    Stop();
                     break;
                 default:
                     string blockSizeId = "Block_Size:";
                     if (sm.StringValue.StartsWith(blockSizeId))
                     {
                         int bytesToRead = int.Parse(sm.StringValue.Substring(blockSizeId.Length - 1));
+
+                        Console.WriteLine("Preparing array to its next value length of {0} bytes!", bytesToRead);
+
                         byteData = new byte[bytesToRead]; //The next message will be of this size...
                     }
                     else
@@ -246,9 +263,23 @@ namespace DeltaSockets
             }
         }
 
+        private void CloseAllClients()
+        {
+            //routingTable[Id].Send(Encoding.Unicode.GetBytes("<close>")); //First, close the client that has send make the request...
+            foreach (KeyValuePair<int, Socket> soc in routingTable)
+                //if (soc.Key != Id) //Then, close the others one
+                soc.Value.Send(Encoding.Unicode.GetBytes("<close>"));
+        }
+
+        private void CloseServerAfterClientsClose()
+        {
+            if (closedClients.Count == routingTable.Count)
+                Stop(); //Close the server, when all the clients has been closed.
+        }
+
         private void DoServerError(string msg)
         {
-            CloseServer();
+            PoliteStop();
             Console.WriteLine("CLOSING SERVER due to: " + msg);
         }
 
@@ -283,24 +314,40 @@ namespace DeltaSockets
             }
         }
 
+        public void PoliteStop()
+        {
+            CloseAllClients(); //And then, the server will autoclose itself...
+        }
+
         /// <summary>
         /// Closes the server.
         /// </summary>
-        public void CloseServer()
+        private void Stop()
         {
-            if (ServerSocket.Connected)
+            if (_state == SocketState.ServerStarted)
             {
-                Console.WriteLine("Closing server");
-                ServerSocket.Shutdown(SocketShutdown.Receive);
-                ServerSocket.Close();
+                try
+                {
+                    Console.WriteLine("Closing server");
+
+                    _state = SocketState.ServerStopped;
+                    if (ServerSocket.Connected) //Aqui lo que tengo que hacer es que se desconecten los clientes...
+                        ServerSocket.Shutdown(SocketShutdown.Both);
+                    ServerSocket.Close();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception ocurred while trying to stop server: " + ex);
+                }
             }
-            else Console.WriteLine("If you want to close something, you have to be first connected!");
+            else
+                Console.WriteLine("Server cannot be stopped because it hasn't been started!");
         }
 
         public void Dispose()
         {
             Console.WriteLine("Disposing server");
-            CloseServer();
+            Stop();
         }
     }
 }
