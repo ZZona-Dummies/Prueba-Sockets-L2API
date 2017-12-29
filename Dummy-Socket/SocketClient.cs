@@ -99,7 +99,6 @@ namespace DeltaSockets
             {
                 using (MemoryStream memoryStream = new MemoryStream(message))
                 {
-                    // memoryStream.Seek(0, SeekOrigin.Begin);
                     return (T) (new BinaryFormatter()).Deserialize(memoryStream);
                 }
             }
@@ -180,14 +179,14 @@ namespace DeltaSockets
         /// <param name="port">The port.</param>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
         public SocketClient(string ip, int port, bool doConnection = false) :
-            this(ip, port, null, -1, doConnection)
+            this(ip, port, null, 100, doConnection)
         { }
 
         public SocketClient(IPAddress ip, int port, bool doConnection = false) :
-            this(ip, port, SocketType.Stream, ProtocolType.Tcp, -1, null, doConnection)
+            this(ip, port, SocketType.Stream, ProtocolType.Tcp, 100, null, doConnection)
         { }
 
-        public SocketClient(IPAddress ip, int port, Action everyFunc, int readEvery = -1, bool doConnection = false) :
+        public SocketClient(IPAddress ip, int port, Action everyFunc, int readEvery = 100, bool doConnection = false) :
             this(ip, port, SocketType.Stream, ProtocolType.Tcp, readEvery, everyFunc, doConnection)
         { }
 
@@ -199,7 +198,7 @@ namespace DeltaSockets
         /// <param name="readEvery">The read every.</param>
         /// <param name="everyFunc">The every function.</param>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
-        public SocketClient(string ip, int port, Action everyFunc, int readEvery = -1, bool doConnection = false) :
+        public SocketClient(string ip, int port, Action everyFunc, int readEvery = 100, bool doConnection = false) :
             this(IPAddress.Parse(ip), port, SocketType.Stream, ProtocolType.Tcp, readEvery, everyFunc, doConnection)
         { }
 
@@ -347,7 +346,7 @@ namespace DeltaSockets
         {
             if (soShutdown == SocketShutdown.Receive)
             {
-                Console.WriteLine("Remember that you're in a Client, you, you can't only close Both connections or only your connection.");
+                Console.WriteLine("Remember that you're in a Client, you can't only close Both connections or only your connection.");
                 return;
             }
             if (ClientSocket.Connected)

@@ -133,7 +133,10 @@ namespace Dummy_Socket
                 else
                     Console.WriteLine("Error receiving data!");
 
-                client.myLogger.Log(sm.msg.ToString());
+                if (client != null)
+                    client.myLogger.Log(sm.msg.ToString());
+                else
+                    Console.WriteLine("Client closed unexpectly!");
             };
         }
 
