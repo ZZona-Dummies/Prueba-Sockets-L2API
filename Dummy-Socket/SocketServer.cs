@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 
 namespace DeltaSockets
 {
@@ -303,39 +301,6 @@ namespace DeltaSockets
         {
             Console.WriteLine("Disposing server");
             CloseServer();
-        }
-    }
-
-    public class SocketServerConsole
-    {
-        private readonly Control printer;
-
-        private SocketServerConsole()
-        {
-        }
-
-        public SocketServerConsole(Control c)
-        {
-            printer = c;
-        }
-
-        public void Log(string str, params object[] str0)
-        {
-            Log(string.Format(str, str0));
-        }
-
-        public void Log(string str)
-        {
-            Console.WriteLine(str);
-#if LOG_SERVER
-            if (printer != null)
-            {
-                if (printer.InvokeRequired) //De esto hice una versión mejorada
-                    printer.Invoke(new MethodInvoker(() => { printer.Text += str + Environment.NewLine; }));
-            }
-            else
-                Console.WriteLine("You must define 'myLogger' field of type 'SocketServerConsole' inside 'SocketServer' in order to use this feature.");
-#endif
         }
     }
 }
