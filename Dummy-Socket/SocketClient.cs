@@ -11,106 +11,6 @@ using Timer = System.Threading.Timer;
 namespace DeltaSockets
 {
     /// <summary>
-    /// Class SocketMessage.
-    /// </summary>
-    [Serializable]
-    public class SocketMessage
-    {
-        public string StringValue
-        {
-            get
-            {
-                try
-                {
-                    return (string) msg;
-                }
-                catch
-                {
-                    return "";
-                }
-            }
-        }
-
-        public int IntValue
-        {
-            get
-            {
-                try
-                {
-                    return (int) msg;
-                }
-                catch
-                {
-                    return -1;
-                }
-            }
-        }
-
-        /// <summary>
-        /// The identifier
-        /// </summary>
-        public int id;
-
-        //Name??
-        /// <summary>
-        /// The MSG
-        /// </summary>
-        public object msg;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SocketMessage"/> class.
-        /// </summary>
-        /// <param name="i">The i.</param>
-        /// <param name="m">The m.</param>
-        public SocketMessage(int i, object m)
-        {
-            id = i;
-            msg = m;
-        }
-
-        public static byte[] Serialize<T>(int Id, T anySerializableObject)
-        {
-            try
-            {
-                using (var memoryStream = new MemoryStream())
-                {
-                    (new BinaryFormatter()).Serialize(memoryStream, new SocketMessage(Id, anySerializableObject));
-                    return memoryStream.ToArray();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Exception serializing: " + ex.ToString());
-                return null;
-            }
-        }
-
-        public static T Deserialize<T>(byte[] message)
-        {
-            if (message == null || message.Length == 0 || (message.Length == 1 && message[0] == 0))
-            {
-                //Microsoft.VisualBasic.Interaction.MsgBox(Convert.ToString("ERROR CONTROLADO?"));
-                Console.WriteLine("Error controlado");
-                return (T) Activator.CreateInstance(typeof(T));
-            }
-
-            Console.WriteLine("Deserializing {0} bytes", message.Length);
-            try
-            {
-                using (MemoryStream memoryStream = new MemoryStream(message))
-                {
-                    return (T) (new BinaryFormatter()).Deserialize(memoryStream);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Exception deserializing: " + ex.ToString());
-                return default(T);
-            }
-        }
-    }
-
-    /// <summary>
     /// Class SocketClient.
     /// </summary>
     public class SocketClient
@@ -134,12 +34,12 @@ namespace DeltaSockets
 
         private IPEndPoint _endpoint;
 
-        //I think I will delete this later
-        private readonly byte[] socketBuffer;
-
+        //Obsolete
         private readonly Timer task;
         private readonly Action act;
         private readonly int period = 1;
+
+        //private byte[] bytes;
 
         internal IPEndPoint IPEnd
         {
@@ -214,7 +114,7 @@ namespace DeltaSockets
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
         public SocketClient(IPAddress ipAddr, int port, SocketType sType, ProtocolType pType, int readEvery, Action everyFunc, bool doConnection = false)
         {
-            socketBuffer = new byte[1024];
+            //bytes = new byte[1024 * 1024 * 10];
 
             period = readEvery;
 
@@ -273,7 +173,7 @@ namespace DeltaSockets
             {
                 ClientSocket.Connect(end);
                 StartReceiving();
-                ClientSocket.Send(SocketMessage.Serialize(Id, "<conn>"));
+                ClientSocket.Send(SocketManager.Serialize(Id, "<conn>"));
             }
             else Console.WriteLine("Destination IP isn't defined!");
         }
@@ -282,7 +182,14 @@ namespace DeltaSockets
         {
             if (!ClientSocket.Equals(null) && ClientSocket.Connected)
             {
-                int bytesSend = ClientSocket.Send(SocketMessage.Serialize(Id, msg));
+                int bytesSend = 0;
+                byte[] bytes = SocketManager.Serialize(Id, msg);
+
+                if (bytes.Length > 1024)
+                    bytesSend += ClientSocket.Send(SocketManager.Serialize(Id, "Block_Size:" + bytes.Length));
+
+                bytesSend += ClientSocket.Send(bytes);
+
                 return bytesSend;
             }
             else
@@ -305,21 +212,21 @@ namespace DeltaSockets
         { //Esto solo devolverá falso cuando se cierre la conexión...
             try
             {
-                byte[] bytes = new byte[1024];
-
                 // Receives data from a bound Socket.
                 int bytesRec = 0;
+                byte[] bytes = new byte[1024];
 
                 if (!ClientSocket.Equals(null))
-                {
                     bytesRec = ClientSocket.Receive(bytes);
-                }
 
                 // Continues to read the data till data isn't available
                 while (ClientSocket.Available > 0)
                     bytesRec = ClientSocket.Receive(bytes);
 
-                SocketMessage sm = (SocketMessage) SocketMessage.Deserialize<object>(bytes);
+                SocketMessage sm = null;
+
+                SocketManager.Deserialize(bytes, out sm, SocketDbgType.Client);
+
                 msg = sm;
 
                 if (sm.StringValue == "<close>")
@@ -329,6 +236,9 @@ namespace DeltaSockets
                     End();
                     return false;
                 }
+
+                //Clean the buffer
+                //Array.Clear(bytes, 0, bytes.Length);
 
                 return true;
             }

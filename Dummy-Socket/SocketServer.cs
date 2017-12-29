@@ -16,6 +16,8 @@ namespace DeltaSockets
     {
         public SocketServerConsole myLogger = new SocketServerConsole(null);
 
+        public const int minBufferSize = 1024;
+
         /// <summary>
         /// The lerped port
         /// </summary>
@@ -42,7 +44,7 @@ namespace DeltaSockets
         public int Port;
 
         private IPEndPoint _endpoint;
-        private readonly byte[] byteData = new byte[1024];
+        private byte[] byteData = new byte[minBufferSize];
 
         /// <summary>
         /// All done
@@ -55,6 +57,8 @@ namespace DeltaSockets
         public static Dictionary<int, Socket> routingTable = new Dictionary<int, Socket>();
 
         private readonly static List<int> closedClients = new List<int>();
+
+        //private static Tuple<ulong, List<byte>>
 
         private static bool debug;
 
@@ -165,25 +169,39 @@ namespace DeltaSockets
         {
             try
             {
-                Socket handler = (Socket) ar.AsyncState;
+                Socket handler = (Socket)ar.AsyncState;
                 int bytesRead = handler.EndReceive(ar);
 
-                if (bytesRead > 0)
+                SocketMessage sm = null;
+                bool serialized = SocketManager.Deserialize(byteData, out sm, SocketDbgType.Server);
+
+                if (bytesRead > 0 && bytesRead < minBufferSize)
                 {
                     //string str = Encoding.Unicode.GetString(byteData, 0, bytesRead); //Obtiene la longitud en bytes de los datos pasados y los transforma en una string
-                    SocketMessage sm = SocketMessage.Deserialize<SocketMessage>(byteData);
-                    //if (str.IsJson())
-                    //    sm = JsonUtility.FromJson<SocketMessage>(str);
+                    Console.WriteLine("Server readed block of {0} bytes", bytesRead);
 
                     if (sm != null)
-                        SwitchValue(sm, handler, bytesRead);
+                    {
+                        if (sm.TypeString == typeof(string).Name)
+                            DoStringAction(sm, handler);
+                        else
+                            DoServerError("Not supported type!");
+                    }
                     else
                     {
-                        if (sm.StringValue == "<stop>") //Si recibe FINCONN sale
-                            CloseServer();
+                        if (serialized)
+                            myLogger.Log("Null object passed though the socket! Ignore...");
                         else
-                            Console.WriteLine("Cannot de-encrypt the message!");
+                            DoServerError("Cannot deserialize!");
                     }
+                }
+                else if (bytesRead > minBufferSize)
+                {
+                    //Check if deserialize is true && sm != null
+
+                    Console.WriteLine("Server is reading big block of {0} bytes!", bytesRead);
+                    SendToOtherClients(sm, bytesRead);
+                    byteData = new byte[minBufferSize]; //Reset the buffer
                 }
 
                 //Continua escuchando, para listar el próximo mensaje, recursividad asíncrona.
@@ -196,7 +214,7 @@ namespace DeltaSockets
             }
         }
 
-        private void SwitchValue(SocketMessage sm, Socket handler, int bytesRead)
+        private void DoStringAction(SocketMessage sm, Socket handler)
         {
             switch (sm.StringValue)
             {
@@ -214,20 +232,40 @@ namespace DeltaSockets
                     if (closedClients.Count == routingTable.Count)
                         CloseServer(); //Close the server, when all the clients has been closed.
                     break;
+                case "<stop>":
+                    CloseServer();
+                    break;
                 default:
-                    myLogger.Log("---------------------------");
-                    myLogger.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
-                    myLogger.Log("Message: {0}", sm.msg);
-                    myLogger.Log("Sending to the other clients.");
-                    myLogger.Log("---------------------------");
-                    myLogger.Log("");
-
-                    //Send to the other clients
-                    foreach (KeyValuePair<int, Socket> soc in routingTable)
-                        if (soc.Key != sm.id)
-                            soc.Value.Send(byteData);
+                    string blockSizeId = "Block_Size:";
+                    if (sm.StringValue.StartsWith(blockSizeId))
+                    {
+                        int bytesToRead = int.Parse(sm.StringValue.Substring(blockSizeId.Length - 1));
+                        byteData = new byte[bytesToRead]; //The next message will be of this size...
+                    }
+                    else
+                        DoServerError("Cannot de-encrypt the message!");
                     break;
             }
+        }
+
+        private void DoServerError(string msg)
+        {
+            CloseServer();
+            Console.WriteLine("CLOSING SERVER due to: " + msg);
+        }
+
+        private void SendToOtherClients(SocketMessage sm, int bytesRead)
+        {
+            myLogger.Log("---------------------------");
+            myLogger.Log("Client with ID {0} sent {1} bytes (JSON).", sm.id, bytesRead);
+            myLogger.Log("Sending to the other clients.");
+            myLogger.Log("---------------------------");
+            myLogger.Log("");
+
+            //Send to the other clients
+            foreach (KeyValuePair<int, Socket> soc in routingTable)
+                if (soc.Key != sm.id)
+                    soc.Value.Send(byteData);
         }
 
         /// <summary>
@@ -238,7 +276,7 @@ namespace DeltaSockets
         {
             try
             {
-                Socket client = (Socket) ar.AsyncState;
+                Socket client = (Socket)ar.AsyncState;
                 client.EndSend(ar);
             }
             catch (Exception ex)
