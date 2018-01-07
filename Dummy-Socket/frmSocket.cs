@@ -174,9 +174,9 @@ namespace Dummy_Socket
         private void frmSocket_Closing(object sender, FormClosingEventArgs e)
         {
             if (state == SocketState.ClientStarted)
-                client.End();
+                client.Stop();
             if (state == SocketState.ServerStarted)
-                server.CloseServer();
+                server.PoliteStop();
         }
 
         private void EnableControls(bool isClient)

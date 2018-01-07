@@ -27,5 +27,6 @@ D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\De
 D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.csproj.GenerateResource.Cache
 D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.exe
 D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.pdb
-D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.csprojResolveAssemblyReference.cache
 D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.csproj.CoreCompileInputs.cache
+D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Dummy-Socket.exe.CodeAnalysisLog.xml
+D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Dummy-Socket.exe.lastcodeanalysissucceeded

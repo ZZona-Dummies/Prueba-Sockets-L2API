@@ -27,8 +27,8 @@ namespace DeltaSockets
         /// <summary>
         /// The port
         /// </summary>
-        public int Port,
-                   Id;
+        public ushort Port;
+        public ulong Id;
 
         private SocketState _state;
         public SocketState myState
@@ -40,6 +40,8 @@ namespace DeltaSockets
         }
 
         private IPEndPoint _endpoint;
+
+        private bool autoConnect;
 
         //Obsolete
         private readonly Timer task;
@@ -83,15 +85,15 @@ namespace DeltaSockets
         /// <param name="ip">The ip.</param>
         /// <param name="port">The port.</param>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
-        public SocketClient(string ip, int port, bool doConnection = false) :
+        public SocketClient(string ip, ushort port, bool doConnection = false) :
             this(ip, port, null, 100, doConnection)
         { }
 
-        public SocketClient(IPAddress ip, int port, bool doConnection = false) :
+        public SocketClient(IPAddress ip, ushort port, bool doConnection = false) :
             this(ip, port, SocketType.Stream, ProtocolType.Tcp, 100, null, doConnection)
         { }
 
-        public SocketClient(IPAddress ip, int port, Action everyFunc, int readEvery = 100, bool doConnection = false) :
+        public SocketClient(IPAddress ip, ushort port, Action everyFunc, int readEvery = 100, bool doConnection = false) :
             this(ip, port, SocketType.Stream, ProtocolType.Tcp, readEvery, everyFunc, doConnection)
         { }
 
@@ -103,7 +105,7 @@ namespace DeltaSockets
         /// <param name="readEvery">The read every.</param>
         /// <param name="everyFunc">The every function.</param>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
-        public SocketClient(string ip, int port, Action everyFunc, int readEvery = 100, bool doConnection = false) :
+        public SocketClient(string ip, ushort port, Action everyFunc, int readEvery = 100, bool doConnection = false) :
             this(IPAddress.Parse(ip), port, SocketType.Stream, ProtocolType.Tcp, readEvery, everyFunc, doConnection)
         { }
 
@@ -117,7 +119,7 @@ namespace DeltaSockets
         /// <param name="readEvery">The read every.</param>
         /// <param name="everyFunc">The every function.</param>
         /// <param name="doConnection">if set to <c>true</c> [do connection].</param>
-        public SocketClient(IPAddress ipAddr, int port, SocketType sType, ProtocolType pType, int readEvery, Action everyFunc, bool doConnection = false)
+        public SocketClient(IPAddress ipAddr, ushort port, SocketType sType, ProtocolType pType, int readEvery, Action everyFunc, bool doConnection = false)
         {
             //bytes = new byte[1024 * 1024 * 10];
 
@@ -136,8 +138,6 @@ namespace DeltaSockets
             {
                 NoDelay = false
             };
-
-            Id = ClientSocket.GetHashCode();
 
             if (doConnection)
                 DoConnection();
@@ -176,7 +176,8 @@ namespace DeltaSockets
                 {
                     ClientSocket.Connect(IPEnd);
                     StartReceiving();
-                    ClientSocket.Send(SocketManager.Serialize(Id, "<conn>"));
+                    Console.WriteLine("Starting new CLIENT connection with ID: {0}", Id);
+                    ClientSocket.Send(SocketManager.ManagedConn(Id));
                 }
                 catch (Exception ex)
                 {
@@ -193,18 +194,19 @@ namespace DeltaSockets
         {
             if (!ClientSocket.Equals(null) && ClientSocket.Connected)
             {
-                int bytesSend = 0;
-                byte[] bytes = SocketManager.Serialize(Id, msg);
+                //bytesSend = 0;
+                byte[] bytes = SocketManager.SerializeForClients(Id, msg);
 
-                if (bytes.Length > 1024)
-                    bytesSend += ClientSocket.Send(SocketManager.Serialize(Id, "Block_Size:" + bytes.Length));
+                //if(bytes.Length > 1024)
+                //    bytesSend += ClientSocket.Send(SocketManager.Serialize(Id, "Block_Size:" + bytes.Length));
 
-                bytesSend += ClientSocket.Send(bytes);
+                int bytesSend = ClientSocket.Send(bytes);
 
                 return bytesSend;
             }
             else
             {
+                Console.WriteLine("Error happened while sending data through a client!");
                 return 0;
             }
         }
@@ -229,32 +231,26 @@ namespace DeltaSockets
 
                 if (!ClientSocket.Equals(null))
                 {
+                    // Continues to read the data till data isn't available
+                    while (ClientSocket.Available > 0)
+                        bytesRec = ClientSocket.Receive(bytes);
+                }
+                else
+                {
                     Console.WriteLine("Server requesting this client to stop, stopping this client! (#{0})", Id);
-
-                    //bytesRec = ClientSocket.Receive(bytes);
 
                     Stop(); //Don't stop, the server will do it for this client.
                     msg = null;
                     return false;
                 }
 
-                // Continues to read the data till data isn't available
-                while (ClientSocket.Available > 0)
-                    bytesRec = ClientSocket.Receive(bytes);
+                SocketManager.Deserialize(bytes, 1024, out msg, SocketDbgType.Client);
 
-                SocketMessage sm = null;
+                if (msg == null)
+                    return false; //Empty message received
 
-                SocketManager.Deserialize(bytes, out sm, SocketDbgType.Client);
-
-                msg = sm;
-
-                if (sm.StringValue == "<close>")
-                {
-                    Console.WriteLine("Closing connection...");
-                    SendData("<client_closed>");
-                    Stop();
-                    return false;
-                }
+                if (msg.StringValue == typeof(string).Name)
+                    return HandleAction(msg);
 
                 return true;
             }
@@ -262,8 +258,35 @@ namespace DeltaSockets
             { //Forced connection close...
                 Console.WriteLine("Exception ocurred while receiving data! " + ex.ToString());
                 msg = null; //Dead silence.
-                SendData("<client_closed>");
                 Stop();
+                return false;
+            }
+        }
+
+        private bool HandleAction(SocketMessage sm)
+        {
+            //before we connect we request an id to the master server...
+            string val = sm.StringValue;
+            if (!string.IsNullOrWhiteSpace(val))
+            {
+                switch (val)
+                {
+                    case "<give_id>":
+                        Id = sm.id;
+                        SendData(SocketManager.ConfirmId(Id));
+                        return true;
+                    case "<close>":
+                        Console.WriteLine("Client is closing connection...");
+                        Stop();
+                        return false;
+                    default:
+                        Console.WriteLine("Unknown action to take! Case: {0}", val);
+                        return true;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Empty string received by client!");
                 return false;
             }
         }
@@ -300,10 +323,11 @@ namespace DeltaSockets
             {
                 try
                 {
-                    Console.WriteLine("Closing client");
+                    Console.WriteLine("Closing client (#{0})", Id);
 
+                    SendData(SocketManager.ClientClosed(Id));
                     _state = SocketState.ClientStopped;
-                    CloseConnection(SocketShutdown.Both);
+                    CloseConnection(SocketShutdown.Both); //No hace falta comprobar si estamos connected
                     Dispose();
                 }
                 catch (Exception ex)

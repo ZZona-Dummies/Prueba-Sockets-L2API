@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -14,7 +16,7 @@ namespace DeltaSockets
     {
         public SocketServerConsole myLogger = new SocketServerConsole(null);
 
-        public const int minBufferSize = 1024;
+        public const int minBufferSize = 4096;
 
         /// <summary>
         /// The lerped port
@@ -61,9 +63,9 @@ namespace DeltaSockets
         /// <summary>
         /// The routing table
         /// </summary>
-        public static Dictionary<int, Socket> routingTable = new Dictionary<int, Socket>();
+        public static Dictionary<ulong, Socket> routingTable = new Dictionary<ulong, Socket>(); //With this we can assume that ulong.MaxValue clients can connect to the Socket (2^64 - 1)
 
-        private readonly static List<int> closedClients = new List<int>();
+        private readonly static List<ulong> closedClients = new List<ulong>();
 
         private static bool debug;
 
@@ -119,7 +121,6 @@ namespace DeltaSockets
             Port = port;
 
             debug = curDebug;
-            //logger = new Logger(Path.Combine(Path.GetDirectoryName(Path.Combine(Application.dataPath, LerpedCore.defaultLogFilePath)), "server-logger.log"));
 
             ServerSocket = new Socket(ipAddr.AddressFamily, sType, pType);
 
@@ -186,7 +187,7 @@ namespace DeltaSockets
                 int bytesRead = handler.EndReceive(ar);
 
                 SocketMessage sm = null;
-                bool serialized = SocketManager.Deserialize(byteData, out sm, SocketDbgType.Server);
+                bool serialized = SocketManager.Deserialize(byteData, byteData.Length, out sm, SocketDbgType.Server); //Aquí hay un problema gordo si ni se puede deserializar un "<conn>"
 
                 if (bytesRead > 0 && bytesRead < minBufferSize)
                 {
@@ -195,10 +196,16 @@ namespace DeltaSockets
 
                     if (sm != null)
                     {
-                        if (sm.TypeString == typeof(string).Name)
-                            DoStringAction(sm, handler);
+                        if (sm.Type == typeof(string)) //Si el mensaje es del tipo steing entonces será un comando
+                            HandleAction(sm, handler);
+                        else if (sm.Type == typeof(SocketBuffer))
+                            Console.Write("");
+                        //Aqui lo que hay que hacer es ir sumando a un buffer general los distintos fragmentos secuenciales que vayan llegando
+                        //elif (tipo == SocketBuffer) //Entonces quiere decir que es para todos los otros clientes ... Aquí lo que haré será una clase en la cual serialice info en paquetes
+                        //Para ello comprobaré el tamaño del paquete que se va a enviar con todos los metadatos qu ya contiene para ver cuantos datos se puede meter más... (El buffer lo haré de 4096 bytes)
+
                         else
-                            DoServerError("Not supported type!");
+                            DoServerError("Not supported type!", sm.id);
                     }
                     else
                     {
@@ -210,11 +217,12 @@ namespace DeltaSockets
                 }
                 else if (bytesRead > minBufferSize)
                 {
+                    Console.WriteLine("Cannot deserialize something that is bigger from the buffer it can contain!");
                     //Check if deserialize is true && sm != null
 
-                    Console.WriteLine("Server is reading big block of {0} bytes!", bytesRead);
+                    /*Console.WriteLine("Server is reading big block of {0} bytes!", bytesRead);
                     SendToOtherClients(sm, bytesRead);
-                    byteData = new byte[minBufferSize]; //Reset the buffer
+                    Array.Resize(ref byteData, minBufferSize); //byteData =  new byte[minBufferSize]; //Reset the buffer*/
                 }
 
                 //Continua escuchando, para listar el próximo mensaje, recursividad asíncrona.
@@ -227,48 +235,81 @@ namespace DeltaSockets
             }
         }
 
-        private void DoStringAction(SocketMessage sm, Socket handler)
+        private void HandleAction(SocketMessage sm, Socket handler)
         {
-            switch (sm.StringValue)
+            string val = sm.StringValue;
+            if (!string.IsNullOrWhiteSpace(val))
             {
-                case "<conn>":
-                    routingTable.Add(sm.id, handler);
-                    break;
-                case "<close_clients>":
-                    CloseAllClients();
-                    break;
-                case "<client_closed>":
-                    closedClients.Add(sm.id);
-                    CloseServerAfterClientsClose();
-                    break;
-                case "<stop>":
-                    CloseAllClients();
-                    break;
-                case "<unpolite_stop>":
-                    Stop();
-                    break;
-                default:
+                if (val.StartsWith("<"))
+                {
+                    switch (sm.StringValue)
+                    {
+                        case "<conn>": //Para que algo se añade aqui debe ocurrir algo...
+                            Console.WriteLine("Adding #{0} client to routing table!", sm.id);
+                            //Give an id for a client before we add it to the routing table
+                            GiveId(handler);
+                            break;
+                        case "<confirm_id>":
+                            routingTable.Add(sm.id, handler);
+                            break;
+                        case "<close_clients>":
+                            CloseAllClients(sm.id);
+                            break;
+                        case "<client_closed>":
+                            closedClients.Add(sm.id);
+                            CloseServerAfterClientsClose();
+                            break;
+                        case "<stop>":
+                            CloseAllClients(sm.id);
+                            break;
+                        case "<unpolite_stop>":
+                            Stop();
+                            break;
+                        default:
+                            DoServerError(string.Format("Cannot de-encrypt the message! Unrecognized 'string' case: {0}", sm.StringValue), sm.id);
+                            break;
+                    }
+                }
+                else
+                {
                     string blockSizeId = "Block_Size:";
                     if (sm.StringValue.StartsWith(blockSizeId))
                     {
-                        int bytesToRead = int.Parse(sm.StringValue.Substring(blockSizeId.Length - 1));
+                        int bytesToRead = int.Parse(sm.StringValue.Substring(blockSizeId.Length));
 
                         Console.WriteLine("Preparing array to its next value length of {0} bytes!", bytesToRead);
 
-                        byteData = new byte[bytesToRead]; //The next message will be of this size...
+                        //byteData = new byte[bytesToRead]; //The next message will be of this size...
+                        Array.Resize(ref byteData, bytesToRead);
                     }
                     else
-                        DoServerError("Cannot de-encrypt the message!");
-                    break;
+                    {
+                        DoServerError(string.Format("Cannot de-encrypt the message! Unrecognized 'string' case: {0}", sm.StringValue), sm.id);
+                    }
+                }
             }
         }
 
-        private void CloseAllClients()
+        private void GiveId(Socket handler)
         {
-            //routingTable[Id].Send(Encoding.Unicode.GetBytes("<close>")); //First, close the client that has send make the request...
-            foreach (KeyValuePair<int, Socket> soc in routingTable)
-                //if (soc.Key != Id) //Then, close the others one
-                soc.Value.Send(Encoding.Unicode.GetBytes("<close>"));
+            //First, we have to assure that there are free id on the current KeyValuePair to optimize the process...
+            ulong id = routingTable.Count > 0 ? routingTable.Keys.Max() : 1;
+
+            handler.Send(SocketManager.SendId(id));
+        }
+
+        private void CloseAllClients(ulong id = 0)
+        {
+            if (id > 0) routingTable[id].Send(SocketManager.PoliteClose(id)); //First, close the client that has send make the request...
+            //Console.WriteLine("Routing: "+routingTable.Count);
+            foreach (KeyValuePair<ulong, Socket> soc in routingTable)
+            { //Aqui hay otro problema, el routing table no alcanza a coger ningun valor
+                if (soc.Key != id) //Then, close the others one
+                {
+                    Console.WriteLine("Sending to CLIENT #{0} order to CLOSE", soc.Key);
+                    soc.Value.Send(SocketManager.PoliteClose(soc.Key)); //Encoding.Unicode.GetBytes("<close>")
+                }
+            }
         }
 
         private void CloseServerAfterClientsClose()
@@ -277,10 +318,11 @@ namespace DeltaSockets
                 Stop(); //Close the server, when all the clients has been closed.
         }
 
-        private void DoServerError(string msg)
+        private void DoServerError(string msg, ulong id = 0)
         {
-            PoliteStop();
-            Console.WriteLine("CLOSING SERVER due to: " + msg);
+            PoliteStop(id);
+            Console.WriteLine("{0} CLOSING SERVER due to: " + msg,
+                id == 0 ? "" : string.Format("(FirstClient: #{0})", id));
         }
 
         private void SendToOtherClients(SocketMessage sm, int bytesRead)
@@ -292,7 +334,7 @@ namespace DeltaSockets
             myLogger.Log("");
 
             //Send to the other clients
-            foreach (KeyValuePair<int, Socket> soc in routingTable)
+            foreach (KeyValuePair<ulong, Socket> soc in routingTable)
                 if (soc.Key != sm.id)
                     soc.Value.Send(byteData);
         }
@@ -314,9 +356,9 @@ namespace DeltaSockets
             }
         }
 
-        public void PoliteStop()
+        public void PoliteStop(ulong id = 0)
         {
-            CloseAllClients(); //And then, the server will autoclose itself...
+            CloseAllClients(id); //And then, the server will autoclose itself...
         }
 
         /// <summary>
