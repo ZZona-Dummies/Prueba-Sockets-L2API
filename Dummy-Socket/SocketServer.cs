@@ -62,10 +62,12 @@ namespace DeltaSockets
 
         private readonly static List<ulong> closedClients = new List<ulong>();
 
-        private static Dictionary<short, List<byte>> dataBuffer = new Dictionary<short, List<byte>>();
+        private static Dictionary<ushort, List<byte>> dataBuffer = new Dictionary<ushort, List<byte>>();
         private static Dictionary<ushort, ulong> requestIDs = new Dictionary<ushort, ulong>();
 
         private static bool debug;
+
+        private static ushort nextReqID;
 
         internal IPEndPoint IPEnd
         {
@@ -197,8 +199,24 @@ namespace DeltaSockets
                             HandleAction(sm, handler);
                         else if (sm.Type == typeof(SocketBuffer))
                         {
-                            SocketBuffer buf = (SocketBuffer)sm.msg;
+                            SocketBuffer buf = sm.TryGetObject<SocketBuffer>();
 
+                            //Create a new request id while receiving packets...
+                            CreateNextReqId(handler, sm.id);
+
+                            ushort reqId = buf.requestID;
+
+                            //Aqui ni se deberia almacenar, deberia almacenarse en los otros clientes segun va pasando por el servidor, para luego hacer lo que quiero hacer mas abajo...
+                            dataBuffer[reqId].AddRange(buf.splittedData);
+                            --requestIDs[reqId];
+
+                            if(requestIDs[reqId] == 0)
+                            {
+                                //Remove from dictionary and deserialize
+                                requestIDs.Remove(reqId);
+
+                                //aqui viene lo interesante porque si le mandamos todo de golpe a los otros clientes...
+                            }
                         }
                         //Aqui lo que hay que hacer es ir sumando a un buffer general los distintos fragmentos secuenciales que vayan llegando
                         //elif (tipo == SocketBuffer) //Entonces quiere decir que es para todos los otros clientes ... Aquí lo que haré será una clase en la cual serialice info en paquetes
@@ -245,33 +263,41 @@ namespace DeltaSockets
                     case SocketCommands.Conn: //Para que algo se añade aqui debe ocurrir algo...
                         Console.WriteLine("Adding #{0} client to routing table!", sm.id);
                         //Give an id for a client before we add it to the routing table
+                        //and create a request id for the next action that needs it
+
+                        nextReqID = requestIDs.Keys.ObtainFreeID();
                         GiveId(handler);
                         break;
-                    case SocketCommands.CreateRequestId:
-                        //ushort id = requestIDs.Keys.ObtainFreeID();
 
+                    case SocketCommands.CreateRequestId:
                         //We add a request with an id for a number of numbers
                         //BufferLen = bufferSplitted.Length
-                        AddRequest((ushort)cmd.Metadata["ReqID"], (ulong)((float)cmd.Metadata["BufferLen"] / (int)cmd.Metadata["BlockLen"])); //Aqui lo que tengo que hacer es crear una clase llamada SocketCommand y dentro meterle el StringValue y metadatos
+                        AddRequest(nextReqID, (ulong)((float)cmd.Metadata["BufferLen"] / (int)cmd.Metadata["BlockLen"])); //Aqui lo que tengo que hacer es crear una clase llamada SocketCommand y dentro meterle el StringValue y metadatos
                         break;
+
                     case SocketCommands.ConfirmConnId:
                         routingTable.Add(sm.id, handler);
                         break;
+
                     case SocketCommands.CloseClients:
                         CloseAllClients(sm.id);
                         break;
+
                     case SocketCommands.ClosedClient:
                         closedClients.Add(sm.id);
                         CloseServerAfterClientsClose();
                         break;
+
                     case SocketCommands.Stop:
                         CloseAllClients(sm.id);
                         break;
+
                     case SocketCommands.UnpoliteStop:
                         Stop();
                         break;
+
                     default:
-                        DoServerError(string.Format("Cannot de-encrypt the message! Unrecognized 'string' case: {0}", sm.StringValue), sm.id);
+                        DoServerError(string.Format("Cannot de-encrypt the message! Unrecognized 'enum' case: {0}", cmd.Command), sm.id);
                         break;
                 }
                 /*}
@@ -298,7 +324,15 @@ namespace DeltaSockets
         private void GiveId(Socket handler)
         {
             //First, we have to assure that there are free id on the current KeyValuePair to optimize the process...
-            handler.Send(SocketManager.SendConnId(routingTable.Keys.ObtainFreeID()));
+            ulong genID = routingTable.Keys.ObtainFreeID();
+
+            handler.Send(SocketManager.SendConnId(genID));
+            CreateNextReqId(handler, genID);
+        }
+
+        private void CreateNextReqId(Socket handler, ulong id)
+        {
+            handler.Send(SocketManager.SendCommand(SocketCommands.CreateNextReqId, new SocketCommandData(new Dictionary<string, object>() { { "reqId", nextReqID } }), id));
         }
 
         private static void AddRequest(ushort id, ulong blockNum)

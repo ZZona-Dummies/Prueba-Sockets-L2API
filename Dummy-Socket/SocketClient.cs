@@ -61,6 +61,8 @@ namespace DeltaSockets
             }
         }
 
+        internal static ushort curReqID;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SocketClient"/> class.
         /// </summary>
@@ -211,10 +213,10 @@ namespace DeltaSockets
             }
         }
 
-        private void BreakLine()
+        /*private void BreakLine()
         {
             ClientSocket.Send(Encoding.Unicode.GetBytes("<stop>"));
-        }
+        }*/
 
         /// <summary>
         /// Receives the message.
@@ -279,6 +281,10 @@ namespace DeltaSockets
                         Console.WriteLine("Client is closing connection...");
                         Stop();
                         return false;
+                    case SocketCommands.CreateNextReqId:
+                        SocketCommand sc = sm.TryGetObject<SocketCommand>();
+                        curReqID = (ushort)sc.Metadata["reqId"];
+                        return true;
                     default:
                         Console.WriteLine("Unknown action to take! Case: {0}", cmd);
                         return true;

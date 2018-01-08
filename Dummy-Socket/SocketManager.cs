@@ -36,7 +36,8 @@ namespace DeltaSockets
 
         //Client
         CreateConnId,
-        CloseInstance
+        CloseInstance,
+        CreateNextReqId,
     }
 
     public class SocketManager
@@ -65,11 +66,10 @@ namespace DeltaSockets
             //Yes, this requires a lot of serialization (3-steps)
             //I have to test how many free bytes has a message, to see how many bytes occupies the instance of the splittedData field.
 
-            //Before, we send any data we have to request an id... I don't know how
+            //Before, we send any data we have to request an id...
+            //My best attemp would be creating a request id for the next use
 
-
-
-            return SocketBuffer.GetBuffers(Id, 0, toBuffer, dests);
+            return SocketBuffer.GetBuffers(Id, SocketClient.curReqID, toBuffer, dests);
         }
 
         public static byte[] Serialize(SocketMessage msg)
