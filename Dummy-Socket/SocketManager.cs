@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -21,109 +22,67 @@ namespace DeltaSockets
         ServerStopped
     }
 
-    /// <summary>
-    /// Class SocketMessage.
-    /// </summary>
-    [Serializable]
-    public class SocketMessage
+    public enum SocketCommands
     {
-        public string StringValue
-        {
-            get
-            {
-                try
-                {
-                    return (string)msg;
-                }
-                catch
-                {
-                    return "";
-                }
-            }
-        }
+        //Server
+        Conn,
+        CreateRequestId,
+        ConfirmConnId,
+        CloseClients,
+        ClosedClient,
+        Stop,
+        UnpoliteStop,
+        CustomCommand,
 
-        public int IntValue
-        {
-            get
-            {
-                try
-                {
-                    return (int)msg;
-                }
-                catch
-                {
-                    return -1;
-                }
-            }
-        }
-
-        /// <summary>
-        /// The identifier
-        /// </summary>
-        public ulong id; //0 is never used, because 0 is for all clients...
-
-        public Type Type
-        {
-            get
-            { //If this is not equal to SocketBuffer we can assume that this is a command for the server.
-                return msg.GetType();
-            }
-        }
-
-        //Name??
-        /// <summary>
-        /// The MSG
-        /// </summary>
-        public object msg;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SocketMessage"/> class.
-        /// </summary>
-        /// <param name="i">The i.</param>
-        /// <param name="m">The m.</param>
-        public SocketMessage(ulong i, object m)
-        {
-            id = i;
-            msg = m;
-        }
-    }
-
-    [Serializable]
-    public class SocketBuffer
-    {
-        public ulong[] destsId = new ulong[1] { 0 };
-        public byte[] splittedData;
-
-        private SocketBuffer()
-        { }
-
-        public SocketBuffer(byte[] data)
-            : this(data, null)
-        { }
-
-        public SocketBuffer(byte[] data, params ulong[] dests)
-        {
-            if (dests != null) destsId = dests;
-            splittedData = data;
-        }
+        //Client
+        CreateConnId,
+        CloseInstance
     }
 
     public class SocketManager
     {
-        public static byte[] SerializeForClients(ulong Id, object toBuffer, SocketDbgType type = SocketDbgType.Client)
+        public const int minBufferSize = 4096;
+
+        public static IEnumerable<byte[]> SerializeForClients(ulong Id, object toBuffer)
+        {
+            return SerializeForClients(Id, toBuffer, SocketDbgType.Client, 0);
+        }
+
+        public static IEnumerable<byte[]> SerializeForClients(ulong Id, object toBuffer, SocketDbgType type)
+        {
+            return SerializeForClients(Id, toBuffer, type, 0);
+        }
+
+        public static IEnumerable<byte[]> SerializeForClients(ulong Id, object toBuffer, params ulong[] dests)
+        {
+            return SerializeForClients(Id, toBuffer, SocketDbgType.Client, dests);
+        }
+
+        //Heavy method
+        public static IEnumerable<byte[]> SerializeForClients(ulong Id, object toBuffer, SocketDbgType type, params ulong[] dests)
         {
             //Prepare here the buffer, calculating the restant size (for this we have to serialize and calculate how many bytes we can introduce on the buffer of SocketBuffer)
             //Yes, this requires a lot of serialization (3-steps)
             //I have to test how many free bytes has a message, to see how many bytes occupies the instance of the splittedData field.
-            return Serialize(new SocketMessage(Id, null), type);
+
+            //Before, we send any data we have to request an id... I don't know how
+
+
+
+            return SocketBuffer.GetBuffers(Id, 0, toBuffer, dests);
         }
 
-        public static byte[] Serialize(SocketMessage msg, SocketDbgType type = SocketDbgType.Client)
+        public static byte[] Serialize(SocketMessage msg)
+        {
+            return Serialize(msg, SocketDbgType.Client);
+        }
+
+        public static byte[] Serialize(SocketMessage msg, SocketDbgType type)
         {
             return Serialize(msg, type);
         }
 
-        private static byte[] Serialize(object obj, SocketDbgType type = SocketDbgType.Client)
+        internal static byte[] Serialize(object obj, SocketDbgType type = (SocketDbgType)(-1))
         {
             try
             {
@@ -133,14 +92,17 @@ namespace DeltaSockets
                     (new BinaryFormatter()).Serialize(memoryStream, obj);
 
                     byte[] bytes = memoryStream.ToArray();
-                    Console.WriteLine("[{1}] Serialized {0} bytes", bytes.Length, type.ToString().ToUpper());
+                    
+                    if(type != (SocketDbgType)(-1))
+                        Console.WriteLine("[{1}] Serialized {0} bytes", bytes.Length, type.ToString().ToUpper());
 
                     return bytes;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception serializing in {0}: " + ex, type.ToString().ToUpper());
+                if (type != (SocketDbgType)(-1))
+                    Console.WriteLine("Exception serializing in {0}: " + ex, type.ToString().ToUpper());
                 return null;
             }
         }
@@ -174,36 +136,41 @@ namespace DeltaSockets
         }
 
         //0 means that the message is not for any client, is a broadcast message sended to the server, so, we have to handle errors when we don't manage it correctly.
-        private static byte[] SendString(string msg, ulong id = 0)
+        public static byte[] SendCommand(SocketCommands cmd, SocketCommandData data, ulong id = 0)
         {
-            return Serialize(new SocketMessage(id, msg));
+            return Serialize(new SocketMessage(id, new SocketCommand(cmd, data)));
+        }
+
+        private static byte[] SendCommand(SocketCommands cmd, ulong id = 0)
+        {
+            return Serialize(new SocketMessage(id, new SocketCommand(cmd)));
         }
 
         //Server actions that doesn't need to be sended to the other clients and maybe that need also any origin id
 
-        public static byte[] SendId(ulong id)
+        public static byte[] SendConnId(ulong id)
         {
-            return SendString("<give_id>", id);
+            return SendCommand(SocketCommands.CreateConnId, id);
         }
 
-        public static byte[] ConfirmId(ulong id)
+        public static byte[] ConfirmConnId(ulong id)
         {
-            return SendString("<confirm_id>", id);
+            return SendCommand(SocketCommands.ConfirmConnId, id);
         }
 
         public static byte[] ManagedConn(ulong id)
         {
-            return SendString("<conn>", id);
+            return SendCommand(SocketCommands.Conn, id);
         }
 
         public static byte[] PoliteClose(ulong id = 0)
         {
-            return SendString("<close>");
+            return SendCommand(SocketCommands.CloseInstance);
         }
 
         public static byte[] ClientClosed(ulong id = 0)
         {
-            return SendString("<client_closed>");
+            return SendCommand(SocketCommands.ClosedClient);
         }
     }
 

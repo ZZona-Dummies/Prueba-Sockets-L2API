@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -40,8 +41,6 @@ namespace DeltaSockets
         }
 
         private IPEndPoint _endpoint;
-
-        private bool autoConnect;
 
         //Obsolete
         private readonly Timer task;
@@ -179,9 +178,9 @@ namespace DeltaSockets
                     Console.WriteLine("Starting new CLIENT connection with ID: {0}", Id);
                     ClientSocket.Send(SocketManager.ManagedConn(Id));
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
-                    Console.WriteLine("Exception ocurred while starting CLIENT: " + ex);
+                    Console.WriteLine("Exception ocurred while starting CLIENT: "+ex);
                     return;
                 }
                 _state = SocketState.ClientStarted;
@@ -194,13 +193,14 @@ namespace DeltaSockets
         {
             if (!ClientSocket.Equals(null) && ClientSocket.Connected)
             {
-                //bytesSend = 0;
-                byte[] bytes = SocketManager.SerializeForClients(Id, msg);
+                int bytesSend = 0;
+                IEnumerable<byte[]> bytes = SocketManager.SerializeForClients(Id, msg);
 
                 //if(bytes.Length > 1024)
                 //    bytesSend += ClientSocket.Send(SocketManager.Serialize(Id, "Block_Size:" + bytes.Length));
 
-                int bytesSend = ClientSocket.Send(bytes);
+                foreach(byte[] b in bytes)
+                    bytesSend += ClientSocket.Send(b);
 
                 return bytesSend;
             }
@@ -227,7 +227,7 @@ namespace DeltaSockets
             {
                 // Receives data from a bound Socket.
                 int bytesRec = 0;
-                byte[] bytes = new byte[1024];
+                byte[] bytes = new byte[SocketManager.minBufferSize];
 
                 if (!ClientSocket.Equals(null))
                 {
@@ -244,12 +244,12 @@ namespace DeltaSockets
                     return false;
                 }
 
-                SocketManager.Deserialize(bytes, 1024, out msg, SocketDbgType.Client);
+                SocketManager.Deserialize(bytes, SocketManager.minBufferSize, out msg, SocketDbgType.Client);
 
                 if (msg == null)
                     return false; //Empty message received
 
-                if (msg.StringValue == typeof(string).Name)
+                if (msg.Type == typeof(SocketCommand))
                     return HandleAction(msg);
 
                 return true;
@@ -265,22 +265,22 @@ namespace DeltaSockets
 
         private bool HandleAction(SocketMessage sm)
         {
-            //before we connect we request an id to the master server...
-            string val = sm.StringValue;
-            if (!string.IsNullOrWhiteSpace(val))
+            //Before we connect we request an id to the master server...
+            SocketCommand cmd = sm.TryGetObject<SocketCommand>();
+            if (cmd != null)
             {
-                switch (val)
+                switch (cmd.Command)
                 {
-                    case "<give_id>":
+                    case SocketCommands.CreateConnId:
                         Id = sm.id;
-                        SendData(SocketManager.ConfirmId(Id));
+                        SendData(SocketManager.ConfirmConnId(Id));
                         return true;
-                    case "<close>":
+                    case SocketCommands.CloseInstance:
                         Console.WriteLine("Client is closing connection...");
                         Stop();
                         return false;
                     default:
-                        Console.WriteLine("Unknown action to take! Case: {0}", val);
+                        Console.WriteLine("Unknown action to take! Case: {0}", cmd);
                         return true;
                 }
             }

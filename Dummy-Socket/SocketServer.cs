@@ -1,10 +1,7 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 
 namespace DeltaSockets
@@ -15,8 +12,6 @@ namespace DeltaSockets
     public class SocketServer
     {
         public SocketServerConsole myLogger = new SocketServerConsole(null);
-
-        public const int minBufferSize = 4096;
 
         /// <summary>
         /// The lerped port
@@ -53,7 +48,7 @@ namespace DeltaSockets
         }
 
         private IPEndPoint _endpoint;
-        private byte[] byteData = new byte[minBufferSize];
+        private byte[] byteData = new byte[SocketManager.minBufferSize];
 
         /// <summary>
         /// All done
@@ -66,6 +61,9 @@ namespace DeltaSockets
         public static Dictionary<ulong, Socket> routingTable = new Dictionary<ulong, Socket>(); //With this we can assume that ulong.MaxValue clients can connect to the Socket (2^64 - 1)
 
         private readonly static List<ulong> closedClients = new List<ulong>();
+
+        private static Dictionary<short, List<byte>> dataBuffer = new Dictionary<short, List<byte>>();
+        private static Dictionary<ushort, ulong> requestIDs = new Dictionary<ushort, ulong>();
 
         private static bool debug;
 
@@ -186,24 +184,25 @@ namespace DeltaSockets
                 Socket handler = (Socket)ar.AsyncState;
                 int bytesRead = handler.EndReceive(ar);
 
-                SocketMessage sm = null;
-                bool serialized = SocketManager.Deserialize(byteData, byteData.Length, out sm, SocketDbgType.Server); //Aquí hay un problema gordo si ni se puede deserializar un "<conn>"
+                bool serialized = SocketManager.Deserialize(byteData, byteData.Length, out SocketMessage sm, SocketDbgType.Server); //Aquí hay un problema gordo si ni se puede deserializar un "<conn>"
 
-                if (bytesRead > 0 && bytesRead < minBufferSize)
+                if (bytesRead > 0 && bytesRead < SocketManager.minBufferSize)
                 {
                     //string str = Encoding.Unicode.GetString(byteData, 0, bytesRead); //Obtiene la longitud en bytes de los datos pasados y los transforma en una string
                     Console.WriteLine("Server readed block of {0} bytes", bytesRead);
 
                     if (sm != null)
                     {
-                        if (sm.Type == typeof(string)) //Si el mensaje es del tipo steing entonces será un comando
+                        if (sm.Type == typeof(SocketCommand)) //Si el mensaje es del tipo steing entonces será un comando
                             HandleAction(sm, handler);
                         else if (sm.Type == typeof(SocketBuffer))
-                            Console.Write("");
+                        {
+                            SocketBuffer buf = (SocketBuffer)sm.msg;
+
+                        }
                         //Aqui lo que hay que hacer es ir sumando a un buffer general los distintos fragmentos secuenciales que vayan llegando
                         //elif (tipo == SocketBuffer) //Entonces quiere decir que es para todos los otros clientes ... Aquí lo que haré será una clase en la cual serialice info en paquetes
                         //Para ello comprobaré el tamaño del paquete que se va a enviar con todos los metadatos qu ya contiene para ver cuantos datos se puede meter más... (El buffer lo haré de 4096 bytes)
-
                         else
                             DoServerError("Not supported type!", sm.id);
                     }
@@ -215,7 +214,7 @@ namespace DeltaSockets
                             DoServerError("Cannot deserialize!");
                     }
                 }
-                else if (bytesRead > minBufferSize)
+                else if (bytesRead > SocketManager.minBufferSize)
                 {
                     Console.WriteLine("Cannot deserialize something that is bigger from the buffer it can contain!");
                     //Check if deserialize is true && sm != null
@@ -237,39 +236,45 @@ namespace DeltaSockets
 
         private void HandleAction(SocketMessage sm, Socket handler)
         {
-            string val = sm.StringValue;
-            if (!string.IsNullOrWhiteSpace(val))
+            //string val = sm.StringValue;
+            SocketCommand cmd = sm.TryGetObject<SocketCommand>();
+            if (cmd != null)
             {
-                if (val.StartsWith("<"))
+                switch (cmd.Command)
                 {
-                    switch (sm.StringValue)
-                    {
-                        case "<conn>": //Para que algo se añade aqui debe ocurrir algo...
-                            Console.WriteLine("Adding #{0} client to routing table!", sm.id);
-                            //Give an id for a client before we add it to the routing table
-                            GiveId(handler);
-                            break;
-                        case "<confirm_id>":
-                            routingTable.Add(sm.id, handler);
-                            break;
-                        case "<close_clients>":
-                            CloseAllClients(sm.id);
-                            break;
-                        case "<client_closed>":
-                            closedClients.Add(sm.id);
-                            CloseServerAfterClientsClose();
-                            break;
-                        case "<stop>":
-                            CloseAllClients(sm.id);
-                            break;
-                        case "<unpolite_stop>":
-                            Stop();
-                            break;
-                        default:
-                            DoServerError(string.Format("Cannot de-encrypt the message! Unrecognized 'string' case: {0}", sm.StringValue), sm.id);
-                            break;
-                    }
+                    case SocketCommands.Conn: //Para que algo se añade aqui debe ocurrir algo...
+                        Console.WriteLine("Adding #{0} client to routing table!", sm.id);
+                        //Give an id for a client before we add it to the routing table
+                        GiveId(handler);
+                        break;
+                    case SocketCommands.CreateRequestId:
+                        //ushort id = requestIDs.Keys.ObtainFreeID();
+
+                        //We add a request with an id for a number of numbers
+                        //BufferLen = bufferSplitted.Length
+                        AddRequest((ushort)cmd.Metadata["ReqID"], (ulong)((float)cmd.Metadata["BufferLen"] / (int)cmd.Metadata["BlockLen"])); //Aqui lo que tengo que hacer es crear una clase llamada SocketCommand y dentro meterle el StringValue y metadatos
+                        break;
+                    case SocketCommands.ConfirmConnId:
+                        routingTable.Add(sm.id, handler);
+                        break;
+                    case SocketCommands.CloseClients:
+                        CloseAllClients(sm.id);
+                        break;
+                    case SocketCommands.ClosedClient:
+                        closedClients.Add(sm.id);
+                        CloseServerAfterClientsClose();
+                        break;
+                    case SocketCommands.Stop:
+                        CloseAllClients(sm.id);
+                        break;
+                    case SocketCommands.UnpoliteStop:
+                        Stop();
+                        break;
+                    default:
+                        DoServerError(string.Format("Cannot de-encrypt the message! Unrecognized 'string' case: {0}", sm.StringValue), sm.id);
+                        break;
                 }
+                /*}
                 else
                 {
                     string blockSizeId = "Block_Size:";
@@ -286,16 +291,19 @@ namespace DeltaSockets
                     {
                         DoServerError(string.Format("Cannot de-encrypt the message! Unrecognized 'string' case: {0}", sm.StringValue), sm.id);
                     }
-                }
+                }*/
             }
         }
 
         private void GiveId(Socket handler)
         {
             //First, we have to assure that there are free id on the current KeyValuePair to optimize the process...
-            ulong id = routingTable.Count > 0 ? routingTable.Keys.Max() : 1;
+            handler.Send(SocketManager.SendConnId(routingTable.Keys.ObtainFreeID()));
+        }
 
-            handler.Send(SocketManager.SendId(id));
+        private static void AddRequest(ushort id, ulong blockNum)
+        { //We add the number of blocks that we will add with the same id
+            requestIDs.Add(id, blockNum);
         }
 
         private void CloseAllClients(ulong id = 0)
