@@ -39,10 +39,20 @@ namespace DeltaSockets
             }
         }
 
+        [Obsolete]
+        public ulong id
+        {
+            get
+            {
+                return ClientOriginId;
+            }
+        }
+
         /// <summary>
         /// The identifier
         /// </summary>
-        public ulong id; //0 is never used, because 0 is for all clients...
+        public ulong ClientOriginId; //0 is never used, because 0 is for all clients...
+        public ulong RequestID;
 
         public Type Type
         {
@@ -63,9 +73,10 @@ namespace DeltaSockets
         /// </summary>
         /// <param name="i">The i.</param>
         /// <param name="m">The m.</param>
-        public SocketMessage(ulong i, object m)
+        public SocketMessage(ulong oi, ulong rid, object m)
         {
-            id = i;
+            ClientOriginId = oi;
+            RequestID = rid;
             msg = m;
         }
 

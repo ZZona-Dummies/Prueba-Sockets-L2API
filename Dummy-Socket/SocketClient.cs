@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -61,7 +62,21 @@ namespace DeltaSockets
             }
         }
 
-        internal static ushort curReqID;
+        private static Dictionary<ulong, Dictionary<uint, IEnumerable<byte>>> dataBuffer = new Dictionary<ulong, Dictionary<uint, IEnumerable<byte>>>();
+
+        //Flag to final deserialization
+        public bool deserialize;
+
+        //Its own requestID list
+        internal List<ulong> requestIDs = new List<ulong>();
+
+        public ulong maxReqId
+        {
+            get
+            {
+                return Id + ushort.MaxValue;
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SocketClient"/> class.
@@ -177,8 +192,7 @@ namespace DeltaSockets
                 {
                     ClientSocket.Connect(IPEnd);
                     StartReceiving();
-                    Console.WriteLine("Starting new CLIENT connection with ID: {0}", Id);
-                    ClientSocket.Send(SocketManager.ManagedConn(Id));
+                    ClientSocket.Send(SocketManager.ManagedConn());
                 }
                 catch(Exception ex)
                 {
@@ -195,14 +209,28 @@ namespace DeltaSockets
         {
             if (!ClientSocket.Equals(null) && ClientSocket.Connected)
             {
-                int bytesSend = 0;
-                IEnumerable<byte[]> bytes = SocketManager.SerializeForClients(Id, msg);
+                IEnumerable<byte[]> bytes = null;
 
-                //if(bytes.Length > 1024)
-                //    bytesSend += ClientSocket.Send(SocketManager.Serialize(Id, "Block_Size:" + bytes.Length));
+                int bytesSend = 0,
+                    bytesLength = 0;
 
-                foreach(byte[] b in bytes)
-                    bytesSend += ClientSocket.Send(b);
+                if (!(msg is byte[]))
+                {
+                    bytes = SocketManager.SerializeForClients(this, Id, msg).AsEnumerable();
+                    foreach (byte[] b in bytes)
+                    {
+                        bytesSend += ClientSocket.Send(b);
+                        bytesLength += b.Length;
+                    }
+                }
+                else
+                {
+                    byte[] m = (byte[])msg;
+                    bytesSend = ClientSocket.Send(m);
+                    bytesLength += m.Length;
+                }
+
+                Console.WriteLine("Sending on client serialized object of type: {0} and length of: {1}/{2}", msg.GetType().Name, bytesLength, bytesSend);
 
                 return bytesSend;
             }
@@ -213,17 +241,12 @@ namespace DeltaSockets
             }
         }
 
-        /*private void BreakLine()
-        {
-            ClientSocket.Send(Encoding.Unicode.GetBytes("<stop>"));
-        }*/
-
         /// <summary>
         /// Receives the message.
         /// </summary>
         /// <param name="msg">The MSG.</param>
         /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
-        public bool ReceiveData(out SocketMessage msg) //No entiendo porque este es sincrono, deberia ser asincrono... Copy & paste rulez!
+        public bool ReceiveData(out object o) //No entiendo porque este es sincrono, deberia ser asincrono... Copy & paste rulez!
         { //Esto solo devolverá falso cuando se cierre la conexión...
             try
             {
@@ -231,41 +254,57 @@ namespace DeltaSockets
                 int bytesRec = 0;
                 byte[] bytes = new byte[SocketManager.minBufferSize];
 
-                if (!ClientSocket.Equals(null))
+                try
                 {
                     // Continues to read the data till data isn't available
                     while (ClientSocket.Available > 0)
                         bytesRec = ClientSocket.Receive(bytes);
                 }
-                else
+                catch(Exception ex)
                 {
-                    Console.WriteLine("Server requesting this client to stop, stopping this client! (#{0})", Id);
+                    Console.WriteLine("Server exception ocurred, stopping this client! (#{0}) => " + ex, Id);
 
                     Stop(); //Don't stop, the server will do it for this client.
-                    msg = null;
+                    o = null;
                     return false;
                 }
 
-                SocketManager.Deserialize(bytes, SocketManager.minBufferSize, out msg, SocketDbgType.Client);
+                SocketMessage sm = null;
+                //if(bytesRec > 0)
+                //Comment the condition to show messages from clients
+                    SocketManager.Deserialize(bytes, SocketManager.minBufferSize, out sm, SocketDbgType.Client);
+                /*else
+                {
+                    //Nothing received from server
+                    o = null;
+                }*/
 
-                if (msg == null)
+                if (!(sm != null && sm.msg != null))
+                {
+                    o = null;
                     return false; //Empty message received
+                }
 
-                if (msg.Type == typeof(SocketCommand))
-                    return HandleAction(msg);
+                bool b = true;
 
-                return true;
+                if (sm.Type == typeof(SocketCommand))
+                    b = HandleAction(ref sm);
+                else if (sm.Type == typeof(SocketBuffer))
+                    b = HandleBuffer(ref sm);
+
+                o = sm.msg;
+                return b;
             }
             catch (Exception ex)
             { //Forced connection close...
                 Console.WriteLine("Exception ocurred while receiving data! " + ex.ToString());
-                msg = null; //Dead silence.
+                o = null; //Dead silence.
                 Stop();
                 return false;
             }
         }
 
-        private bool HandleAction(SocketMessage sm)
+        private bool HandleAction(ref SocketMessage sm)
         {
             //Before we connect we request an id to the master server...
             SocketCommand cmd = sm.TryGetObject<SocketCommand>();
@@ -274,17 +313,17 @@ namespace DeltaSockets
                 switch (cmd.Command)
                 {
                     case SocketCommands.CreateConnId:
+                        Console.WriteLine("Starting new CLIENT connection with ID: {0}", sm.id);
                         Id = sm.id;
+
                         SendData(SocketManager.ConfirmConnId(Id));
                         return true;
+
                     case SocketCommands.CloseInstance:
                         Console.WriteLine("Client is closing connection...");
                         Stop();
                         return false;
-                    case SocketCommands.CreateNextReqId:
-                        SocketCommand sc = sm.TryGetObject<SocketCommand>();
-                        curReqID = (ushort)sc.Metadata["reqId"];
-                        return true;
+
                     default:
                         Console.WriteLine("Unknown action to take! Case: {0}", cmd);
                         return true;
@@ -293,6 +332,52 @@ namespace DeltaSockets
             else
             {
                 Console.WriteLine("Empty string received by client!");
+                return false;
+            }
+        }
+
+        private bool HandleBuffer(ref SocketMessage sm)
+        {
+            SocketBuffer buf = sm.TryGetObject<SocketBuffer>();
+            if (buf != null)
+            {
+                try
+                {
+                    ulong reqId = sm.RequestID;
+
+                    //Tengo que optimizar esto
+                    if (dataBuffer.ContainsKey(reqId))
+                    {
+                        Dictionary<uint, IEnumerable<byte>> d = new Dictionary<uint, IEnumerable<byte>>();
+                        d.Add(buf.myOrder, buf.splittedData);
+                        dataBuffer[reqId] = d; //.AddRange(buf.splittedData);
+                    }
+                    else
+                    {
+                        Dictionary<uint, IEnumerable<byte>> d = new Dictionary<uint, IEnumerable<byte>>();
+                        d.Add(buf.myOrder, buf.splittedData);
+                        dataBuffer.Add(reqId, d);
+                    }
+
+                    if(buf.end)
+                    {
+                        object o = null;
+                        SocketManager.Deserialize(dataBuffer[reqId].Select(x => x.Value), 0, out o, SocketDbgType.Client);
+                        sm = new SocketMessage(sm.id, 0, o);
+                        deserialize = true;
+                        dataBuffer.Remove(reqId);
+                    }
+                    return true;
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine("Buffer couldn't add bytes due to an exception! Ex: "+ex);
+                    return false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Empty buffer received by client!");
                 return false;
             }
         }
@@ -348,6 +433,7 @@ namespace DeltaSockets
         private void Timering(object stateInfo)
         {
             act();
+            if (deserialize) deserialize = false;
         }
     }
 }

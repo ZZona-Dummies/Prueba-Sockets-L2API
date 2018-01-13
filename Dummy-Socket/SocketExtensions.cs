@@ -33,24 +33,6 @@ namespace DeltaSockets
             }
         }
 
-        public static T ObtainFreeID<T>(this IEnumerable<T> arr)
-        {
-            T id = (dynamic)1; //routingTable.Count > 0 ? routingTable.Keys.Max() : 1;
-
-            if (arr.Count() > 0)
-            {
-                T n = (dynamic)0,
-                      m = (dynamic)arr.Max();
-
-                if (arr.FindFirstMissingNumberFromSequence(out n, new MinMax<T>((dynamic)1, m)))
-                    id = n;
-                else
-                    id = m;
-            }
-
-            return id;
-        }
-
         public static bool FindFirstMissingNumberFromSequence<T>(this IEnumerable<T> arr, out T n, MinMax<T> mnmx = null)
         {
             //Dupe
@@ -122,6 +104,7 @@ namespace DeltaSockets
             return typeof(T);
         }
 
+        //This is necessary because we cannot cast (using C# expression (Type)var, or var as Type) => Errors: CS0077, CS0030, CS0413
         public static T ConvertValue<T>(this object o) where T : struct
         {
             return (T)Convert.ChangeType(o, typeof(T));
