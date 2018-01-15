@@ -13,9 +13,9 @@ namespace DeltaSockets
         public IEnumerable<ulong> destsId;
         public string OriginalType;
         public IEnumerable<byte> splittedData; //Esto tampoco...
-        //public uint blockNum; //With this you can transfer 16TB, it only ocuppies 4 bytes as maximum
-        public bool end;
-        public uint myOrder; //This can store to 16TB... (4 KB * uint.MaxValue)
+        //With this you can transfer 8TB, it only ocuppies 4 bytes as maximum
+        public int myOrder; //This can store to 8TB... (4 KB * int.MaxValue)
+        public int blockNum; //Replicate all this info in all blocks
 
         private SocketBuffer()
         { }
@@ -26,7 +26,7 @@ namespace DeltaSockets
             destsId = (IEnumerable<ulong>)info.GetValue("dI", typeof(ulong[]));
             OriginalType = info.GetString("OT");
             splittedData = (IEnumerable<byte>)info.GetValue("sD", typeof(byte[]));
-            end = info.GetBoolean("end");
+            blockNum = info.GetInt32("bN");
         }
 
         private SocketBuffer(string type)
@@ -52,14 +52,14 @@ namespace DeltaSockets
             //We create an instance and we get an id & the block length
             int blockLen = GetBlockLength(sb);
 
-            uint w = 1;
+            int w = 1;
             for (int i = 0; i < bufferSplitted.Length; i += blockLen)
             {
                 if (i > 0) sb = new SocketBuffer(strType, dests);
 
-                //sb.blockNum = (uint)((float)bufferSplitted.Length / blockLen); //We get the number of packets we will send
                 sb.myOrder = w;
                 sb.splittedData = bufferSplitted.Skip(i).Take(blockLen - 1);
+                sb.blockNum = (int)((float)bufferSplitted.Length / blockLen); //We get the number of packets we will send
 
                 ulong requestId = client.Id;
 
@@ -69,8 +69,8 @@ namespace DeltaSockets
 
                 client.requestIDs.Add(requestId);
 
-                if(i >= bufferSplitted.Length - blockLen - 1)
-                    sb.end = true;
+                //if(i >= bufferSplitted.Length - blockLen - 1)
+                //    sb.end = true;
 
                 ++w;
 
@@ -80,7 +80,7 @@ namespace DeltaSockets
 
         private static int GetBlockLength(SocketBuffer sb)
         {
-            return SocketManager.minBufferSize - (sb.GetObjectSize() + 144); //144 of margin?? Esto está cogido con pinzas
+            return StateObject.BufferSize - (sb.GetObjectSize() + 144); //144 of margin?? Esto está cogido con pinzas
         }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -90,10 +90,17 @@ namespace DeltaSockets
 
             info.AddValue("dI", destsId.ToArray());
             info.AddValue("OT", OriginalType);
-            info.AddValue("end", end);
+            info.AddValue("bN", blockNum);
 
             if(splittedData != null)
                 info.AddValue("sD", splittedData.ToArray());
         }
     }
+
+    public class SocketStorer
+    {
+        public Lazy<List<byte>> buffer = new Lazy<List<byte>>(() => new List<byte>());
+        public int PacketCount;
+    }
+
 }

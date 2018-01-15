@@ -12,6 +12,7 @@ namespace DeltaSockets
     /// </summary>
     public class SocketServer
     {
+        #region "Fields"
         public SocketServerConsole myLogger = new SocketServerConsole(null);
 
         /// <summary>
@@ -39,17 +40,8 @@ namespace DeltaSockets
         /// </summary>
         public int Port;
 
-        private SocketState _state;
-        public SocketState myState
-        {
-            get
-            {
-                return _state;
-            }
-        }
-
         private IPEndPoint _endpoint;
-        private byte[] byteData = new byte[SocketManager.minBufferSize];
+        private byte[] byteData = new byte[StateObject.BufferSize];
 
         /// <summary>
         /// All done
@@ -62,6 +54,17 @@ namespace DeltaSockets
         public static Dictionary<ulong, Socket> routingTable = new Dictionary<ulong, Socket>(); //With this we can assume that ulong.MaxValue clients can connect to the Socket (2^64 - 1)
 
         private static bool debug;
+        #endregion
+
+        #region "Propierties"
+        private SocketState _state;
+        public SocketState myState
+        {
+            get
+            {
+                return _state;
+            }
+        }
 
         internal IPEndPoint IPEnd
         {
@@ -76,7 +79,9 @@ namespace DeltaSockets
                 else return null;
             }
         }
+        #endregion
 
+        #region "Socket Constructors"
         /// <summary>
         /// Initializes a new instance of the <see cref="SocketServer"/> class.
         /// </summary>
@@ -121,7 +126,9 @@ namespace DeltaSockets
             if (doConnection)
                 ComeAlive();
         }
+        #endregion
 
+        #region "Socket Methods"
         /// <summary>
         /// Comes the alive.
         /// </summary>
@@ -134,7 +141,7 @@ namespace DeltaSockets
                     try
                     {
                         ServerSocket.Bind(IPEnd);
-                        ServerSocket.Listen(10); //El servidor se prepara para recebir la conexion de 10 clientes simultaneamente
+                        ServerSocket.Listen(100); //El servidor se prepara para recebir la conexion de 100 clientes simultaneamente
 
                         Console.WriteLine("Waiting for a connection...");
                         ServerSocket.BeginAccept(new AsyncCallback(OnAccept), ServerSocket);
@@ -182,7 +189,7 @@ namespace DeltaSockets
 
                 bool serialized = SocketManager.Deserialize(byteData, byteData.Length, out SocketMessage sm, SocketDbgType.Server);
 
-                if (bytesRead > 0 && bytesRead <= SocketManager.minBufferSize)
+                if (bytesRead > 0 && bytesRead <= StateObject.BufferSize)
                 {
                     //string str = Encoding.Unicode.GetString(byteData, 0, bytesRead); //Obtiene la longitud en bytes de los datos pasados y los transforma en una string
                     Console.WriteLine("Server readed block of {0} bytes", bytesRead);
@@ -208,15 +215,15 @@ namespace DeltaSockets
                     else
                     {
                         if (serialized)
-                            if (bytesRead > SocketManager.minBufferSize)
-                                myLogger.Log("Overpassing {0} bytes to {1} bytes.", SocketManager.minBufferSize, bytesRead);
+                            if (bytesRead > StateObject.BufferSize)
+                                myLogger.Log("Overpassing {0} bytes to {1} bytes.", StateObject.BufferSize, bytesRead);
                             else if (bytesRead == 0)
                                 myLogger.Log("Null object passed though the socket! Ignore...");
                             else
                                 DoServerError("Cannot deserialize!");
                     }
                 }
-                else if (bytesRead > SocketManager.minBufferSize)
+                else if (bytesRead > StateObject.BufferSize)
                 {
                     Console.WriteLine("Cannot deserialize something that is bigger from the buffer it can contain!");
                 }
@@ -231,6 +238,25 @@ namespace DeltaSockets
             }
         }
 
+        /// <summary>
+        /// Called when [send].
+        /// </summary>
+        /// <param name="ar">The ar.</param>
+        public void OnSend(IAsyncResult ar)
+        {
+            try
+            {
+                Socket client = (Socket)ar.AsyncState;
+                client.EndSend(ar);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+        #endregion
+
+        #region "Class Methods"
         private void HandleAction(SocketMessage sm, Socket handler)
         {
             //string val = sm.StringValue;
@@ -239,10 +265,19 @@ namespace DeltaSockets
             {
                 switch (cmd.Command)
                 {
-                    case SocketCommands.Conn: //Para que algo se añade aqui debe ocurrir algo...
+                    case SocketCommands.Conn: 
+                        //Para que algo se añade aqui debe ocurrir algo...
                         //Give an id for a client before we add it to the routing table
                         //and create a request id for the next action that needs it
-                        GiveId(handler);
+
+                        //First, we have to assure that there are free id on the current KeyValuePair to optimize the process...
+                        ulong genID = 1;
+
+                        //Give id in a range...
+                        bool b = routingTable.Keys.FindFirstMissingNumberFromSequence(out genID, new MinMax<ulong>(1 + (ulong)routingTable.Count * ushort.MaxValue, 1 + (ulong)routingTable.Count * ushort.MaxValue + ushort.MaxValue));
+                        Console.WriteLine("Adding #{0} client to routing table!", genID); //Esto ni parece funcionar bien
+
+                        handler.Send(SocketManager.SendConnId(genID));
                         break;
 
                     case SocketCommands.ConfirmConnId:
@@ -274,45 +309,7 @@ namespace DeltaSockets
             }
         }
 
-        private void GiveId(Socket handler)
-        {
-            //First, we have to assure that there are free id on the current KeyValuePair to optimize the process...
-            ulong genID = 1;
-
-            //Give id in a range...
-            bool b = routingTable.Keys.FindFirstMissingNumberFromSequence(out genID, new MinMax<ulong>(1 + (ulong)routingTable.Count * ushort.MaxValue, 1 + (ulong)routingTable.Count * ushort.MaxValue + ushort.MaxValue));
-            Console.WriteLine("Adding #{0} client to routing table!", genID); //Esto ni parece funcionar bien
-
-            handler.Send(SocketManager.SendConnId(genID));
-        }
-
-        private void CloseAllClients(ulong id = 0)
-        {
-            if (id > 0) routingTable[id].Send(SocketManager.PoliteClose(id)); //First, close the client that has send make the request...
-            Console.WriteLine("Closing all {0} clients connected!", routingTable.Count);
-            foreach (KeyValuePair<ulong, Socket> soc in routingTable)
-            {
-                if (soc.Key != id) //Then, close the others one
-                {
-                    Console.WriteLine("Sending to CLIENT #{0} order to CLOSE", soc.Key);
-                    soc.Value.Send(SocketManager.PoliteClose(soc.Key)); //Encoding.Unicode.GetBytes("<close>")
-                }
-            }
-        }
-
-        private void CloseServerAfterClientsClose()
-        {
-            if (routingTable.Count == routingTable.Count)
-                Stop(); //Close the server, when all the clients has been closed.
-        }
-
-        private void DoServerError(string msg, ulong id = 0)
-        {
-            PoliteStop(id);
-            Console.WriteLine("{0} CLOSING SERVER due to: " + msg,
-                id == 0 ? "" : string.Format("(FirstClient: #{0})", id));
-        }
-
+        #region "Send Methods"
         private void SendToAllClients(SocketMessage sm, int bytesRead)
         {
             myLogger.Log("---------------------------");
@@ -354,22 +351,34 @@ namespace DeltaSockets
                 //Error
             }
         }
+        #endregion
 
-        /// <summary>
-        /// Called when [send].
-        /// </summary>
-        /// <param name="ar">The ar.</param>
-        public void OnSend(IAsyncResult ar)
+        #region "Error & Close & Stop & Dispose" 
+        private void DoServerError(string msg, ulong id = 0)
         {
-            try
+            PoliteStop(id);
+            Console.WriteLine("{0} CLOSING SERVER due to: " + msg,
+                id == 0 ? "" : string.Format("(FirstClient: #{0})", id));
+        }
+
+        private void CloseAllClients(ulong id = 0)
+        {
+            if (id > 0) routingTable[id].Send(SocketManager.PoliteClose(id)); //First, close the client that has send make the request...
+            Console.WriteLine("Closing all {0} clients connected!", routingTable.Count);
+            foreach (KeyValuePair<ulong, Socket> soc in routingTable)
             {
-                Socket client = (Socket)ar.AsyncState;
-                client.EndSend(ar);
+                if (soc.Key != id) //Then, close the others one
+                {
+                    Console.WriteLine("Sending to CLIENT #{0} order to CLOSE", soc.Key);
+                    soc.Value.Send(SocketManager.PoliteClose(soc.Key)); //Encoding.Unicode.GetBytes("<close>")
+                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+        }
+
+        private void CloseServerAfterClientsClose()
+        {
+            if (routingTable.Count == routingTable.Count)
+                Stop(); //Close the server, when all the clients has been closed.
         }
 
         public void PoliteStop(ulong id = 0)
@@ -407,5 +416,8 @@ namespace DeltaSockets
             Console.WriteLine("Disposing server");
             Stop();
         }
+        #endregion
+
+        #endregion
     }
 }

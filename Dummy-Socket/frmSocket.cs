@@ -91,7 +91,7 @@ namespace Dummy_Socket
                 {
                     if (ValidateClient())
                     {
-                        client = new SocketClient(clientIP.Text, (int) clientPort.Value, ClientAction());
+                        client = new SocketClient(clientIP.Text, (ushort) clientPort.Value, ClientAction());
                         client.myLogger = new SocketClientConsole(receivedMsgs, false);
                         client.DoConnection();
 
@@ -121,22 +121,22 @@ namespace Dummy_Socket
             }
         }
 
-        private Action ClientAction()
+        private Action<object> ClientAction()
         {
-            return () =>
+            return (o) =>
             {
                 byte[] bytes = new byte[1024];
 
-                SocketMessage sm = null;
+                /*SocketMessage sm = null;
                 if (client.ReceiveData(out sm))
                     Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
                 else
-                    Console.WriteLine("Error receiving data!");
+                    Console.WriteLine("Error receiving data!");*/ //Error fixing
 
-                if (client != null)
+                /*if (client != null)
                     client.myLogger.Log(sm.msg.ToString());
                 else
-                    Console.WriteLine("Client closed unexpectly!");
+                    Console.WriteLine("Client closed unexpectly!");*/
             };
         }
 
@@ -162,7 +162,7 @@ namespace Dummy_Socket
 
         private void sendMsg_Click(object sender, EventArgs e)
         {
-            client.SendData(clientMsg.Text);
+            client.Send(clientMsg.Text);
             clientMsg.Text = "";
         }
 

@@ -76,8 +76,13 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SocketBuffer.cs" />
     <Compile Include="SocketClient.cs" />
+    <Compile Include="SocketCommand.cs" />
+    <Compile Include="SocketCommandData.cs" />
+    <Compile Include="SocketExtensions.cs" />
     <Compile Include="SocketManager.cs" />
+    <Compile Include="SocketMessage.cs" />
     <Compile Include="SocketServer.cs" />
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>

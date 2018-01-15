@@ -19,6 +19,16 @@ namespace DeltaSockets
         }
     }
 
+    public static class ArrayExtensions
+    {
+        public static IEnumerable<T> JoinMultipleArray<T>(this IEnumerable<T[]> array)
+        {
+            foreach (var el in array)
+                for (int i = 0; i < el.Length; ++i)
+                    yield return el[i];
+        }
+    }
+
     public static class SocketExtensions
     {
         public static int GetObjectSize(this object TestObject)

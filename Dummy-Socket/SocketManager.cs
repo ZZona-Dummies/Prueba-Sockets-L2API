@@ -41,7 +41,7 @@ namespace DeltaSockets
 
     public class SocketManager
     {
-        public const int minBufferSize = 4096;
+        //public const int minBufferSize = 4096;
 
         public static IEnumerable<byte[]> SerializeForClients(SocketClient client, ulong Id, object toBuffer)
         {
