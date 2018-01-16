@@ -1,5 +1,6 @@
 ﻿using DeltaSockets;
 using System;
+using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Windows.Forms;
@@ -18,6 +19,8 @@ namespace Dummy_Socket
         public int socketID;
 
         private SocketState _state;
+
+        private static BackgroundWorker workerObject;
 
         public SocketState state
         {
@@ -91,9 +94,15 @@ namespace Dummy_Socket
                 {
                     if (ValidateClient())
                     {
+                        workerObject = new BackgroundWorker() { WorkerSupportsCancellation = true };
+                        workerObject.DoWork += (s, ev) =>
+                        {
+                            client.DoConnection();
+                        };
+
                         client = new SocketClient(clientIP.Text, (ushort) clientPort.Value, ClientAction());
                         client.myLogger = new SocketClientConsole(receivedMsgs, false);
-                        client.DoConnection();
+                        workerObject.RunWorkerAsync();
 
                         succ = true;
                     }
@@ -125,18 +134,18 @@ namespace Dummy_Socket
         {
             return (o) =>
             {
-                byte[] bytes = new byte[1024];
+                //byte[] bytes = new byte[1024];
 
-                /*SocketMessage sm = null;
-                if (client.ReceiveData(out sm))
-                    Console.WriteLine("My ID: {0}, Id received: {1}\nMessage: {2}", client.Id, sm.id, sm.msg);
+                SocketMessage sm = null;
+                if (o != null) //client.ReceiveData(out sm))
+                    Console.WriteLine("My ID: {0}, Id received: {1}\nType: {2}\nMessage: {3}", client.Id, sm.id, o.GetType().Name, sm.msg);
                 else
-                    Console.WriteLine("Error receiving data!");*/ //Error fixing
+                    Console.WriteLine("Error receiving data!"); //Error fixing
 
-                /*if (client != null)
+                if (client != null)
                     client.myLogger.Log(sm.msg.ToString());
                 else
-                    Console.WriteLine("Client closed unexpectly!");*/
+                    Console.WriteLine("Client closed unexpectly!");
             };
         }
 
@@ -174,9 +183,27 @@ namespace Dummy_Socket
         private void frmSocket_Closing(object sender, FormClosingEventArgs e)
         {
             if (state == SocketState.ClientStarted)
-                client.Stop();
+                ClientClosing();
             if (state == SocketState.ServerStarted)
-                server.PoliteStop();
+                ServerClosing();
+        }
+
+        private void ClientClosing()
+        {
+            client.Dispose();
+            workerObject.CancelAsync();
+            CommonClosing();
+        }
+
+        private void ServerClosing()
+        {
+            server.Dispose();
+            CommonClosing();
+        }
+
+        private void CommonClosing()
+        {
+            Console.WriteLine("Closing chiringuito.");
         }
 
         private void EnableControls(bool isClient)

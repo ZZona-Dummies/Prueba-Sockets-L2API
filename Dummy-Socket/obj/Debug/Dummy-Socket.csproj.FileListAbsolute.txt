@@ -28,8 +28,6 @@ D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\De
 D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.exe
 D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.pdb
 D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.csproj.CoreCompileInputs.cache
-D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Dummy-Socket.exe.CodeAnalysisLog.xml
-D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Dummy-Socket.exe.lastcodeanalysissucceeded
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy_Socket.frmMain.resources
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy_Socket.frmOptions.resources
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy_Socket.frmSocket.resources
@@ -43,3 +41,4 @@ X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Dummy-Sock
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Dummy-Socket.pdb
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Newtonsoft.Json.dll
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Newtonsoft.Json.xml
+D:\VISUAL STUDIO\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.csprojResolveAssemblyReference.cache

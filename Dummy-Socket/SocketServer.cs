@@ -53,7 +53,7 @@ namespace DeltaSockets
         /// </summary>
         public static Dictionary<ulong, Socket> routingTable = new Dictionary<ulong, Socket>(); //With this we can assume that ulong.MaxValue clients can connect to the Socket (2^64 - 1)
 
-        private static bool debug;
+        private static bool dispose, debug;
         #endregion
 
         #region "Propierties"
@@ -291,7 +291,7 @@ namespace DeltaSockets
                     case SocketCommands.ClosedClient:
                         //closedClients.Add(sm.id);
                         routingTable.Remove(sm.id);
-                        CloseServerAfterClientsClose();
+                        CloseServerAfterClientsClose(dispose);
                         break;
 
                     case SocketCommands.Stop:
@@ -299,7 +299,8 @@ namespace DeltaSockets
                         break;
 
                     case SocketCommands.UnpoliteStop:
-                        Stop();
+                        object d = cmd.Metadata["Dispose"];
+                        Stop(d != null && ((bool)d));
                         break;
 
                     default:
@@ -354,9 +355,9 @@ namespace DeltaSockets
         #endregion
 
         #region "Error & Close & Stop & Dispose" 
-        private void DoServerError(string msg, ulong id = 0)
+        private void DoServerError(string msg, ulong id = 0, bool dis = false)
         {
-            PoliteStop(id);
+            PoliteStop(dis, id);
             Console.WriteLine("{0} CLOSING SERVER due to: " + msg,
                 id == 0 ? "" : string.Format("(FirstClient: #{0})", id));
         }
@@ -375,21 +376,22 @@ namespace DeltaSockets
             }
         }
 
-        private void CloseServerAfterClientsClose()
+        private void CloseServerAfterClientsClose(bool dis)
         {
             if (routingTable.Count == routingTable.Count)
-                Stop(); //Close the server, when all the clients has been closed.
+                Stop(dis); //Close the server, when all the clients has been closed.
         }
 
-        public void PoliteStop(ulong id = 0)
+        public void PoliteStop(bool dis = false, ulong id = 0)
         {
+            dispose = dis;
             CloseAllClients(id); //And then, the server will autoclose itself...
         }
 
         /// <summary>
         /// Closes the server.
         /// </summary>
-        private void Stop()
+        private void Stop(bool dis = true)
         {
             if (_state == SocketState.ServerStarted)
             {
@@ -401,6 +403,7 @@ namespace DeltaSockets
                     if (ServerSocket.Connected) //Aqui lo que tengo que hacer es que se desconecten los clientes...
                         ServerSocket.Shutdown(SocketShutdown.Both);
                     ServerSocket.Close();
+                    if (dis) ServerSocket = null; //Dispose
                 }
                 catch (Exception ex)
                 {
@@ -414,7 +417,7 @@ namespace DeltaSockets
         public void Dispose()
         {
             Console.WriteLine("Disposing server");
-            Stop();
+            PoliteStop(true);
         }
         #endregion
 
