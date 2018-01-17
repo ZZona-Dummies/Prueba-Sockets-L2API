@@ -19,7 +19,13 @@ namespace DeltaSockets
         public const short BufferSize = short.MaxValue; //32KB
 
         // Receive buffer.
-        public byte[] buffer = new byte[BufferSize];
+        public byte[] buffer;
+
+        public StateObject()
+        {
+            Console.WriteLine("StateObject constructor called!");
+            buffer = new byte[BufferSize];
+        }
     }
 
     /// <summary>
@@ -284,11 +290,10 @@ namespace DeltaSockets
             try
             {
                 // Create the state object.
-                StateObject state = new StateObject();
-                state.workSocket = ClientSocket;
+                stateObject.workSocket = ClientSocket;
 
                 // Begin receiving the data from the remote device.
-                ClientSocket.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
+                ClientSocket.BeginReceive(stateObject.buffer, 0, StateObject.BufferSize, 0,
                     new AsyncCallback(ReceiveCallback), stateObject);
             }
             catch (Exception e)
