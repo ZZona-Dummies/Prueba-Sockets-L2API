@@ -52,6 +52,7 @@ namespace DeltaSockets
         /// The identifier
         /// </summary>
         public ulong ClientOriginId; //0 is never used, because 0 is for all clients...
+
         public ulong RequestID;
 
         public int MessageSize

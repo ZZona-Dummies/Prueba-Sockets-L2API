@@ -1,11 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Dummy_Socket
@@ -41,15 +38,15 @@ namespace Dummy_Socket
             get
             {
                 if (_eForm == null)
-                    _eForm = (T) Activator.CreateInstance(typeof(T));
+                    _eForm = (T)Activator.CreateInstance(typeof(T));
                 return _eForm;
             }
         }
 
         public T1 CreateInstance<T1>() where T1 : T
         {
-            _eForm = (T) Activator.CreateInstance(typeof(T1));
-            return (T1) _eForm;
+            _eForm = (T)Activator.CreateInstance(typeof(T1));
+            return (T1)_eForm;
         }
 
         public static Configuration cfg

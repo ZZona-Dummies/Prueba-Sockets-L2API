@@ -100,7 +100,7 @@ namespace Dummy_Socket
                             client.DoConnection();
                         };
 
-                        client = new SocketClient(clientIP.Text, (ushort) clientPort.Value, ClientAction());
+                        client = new SocketClient(clientIP.Text, (ushort)clientPort.Value, ClientAction());
                         client.myLogger = new SocketClientConsole(receivedMsgs, false);
                         workerObject.RunWorkerAsync();
 
@@ -114,7 +114,7 @@ namespace Dummy_Socket
             {
                 if (ValidateServer())
                 {
-                    server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int) serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
+                    server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int)serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
                     server.myLogger = new SocketServerConsole(serverLog);
                     server.ComeAlive();
 

@@ -13,8 +13,10 @@ namespace DeltaSockets
         public IEnumerable<ulong> destsId;
         public string OriginalType;
         public IEnumerable<byte> splittedData; //Esto tampoco...
+
         //With this you can transfer 8TB, it only ocuppies 4 bytes as maximum
         public int myOrder; //This can store to 8TB... (4 KB * int.MaxValue)
+
         public int blockNum; //Replicate all this info in all blocks
 
         private SocketBuffer()
@@ -64,7 +66,7 @@ namespace DeltaSockets
                 ulong requestId = client.Id;
 
                 if (client.requestIDs == null) client.requestIDs = new List<ulong>();
-                if(client.requestIDs.Count > 0)
+                if (client.requestIDs.Count > 0)
                     client.requestIDs.FindFirstMissingNumberFromSequence(out requestId, new MinMax<ulong>(client.Id, client.maxReqId));
 
                 client.requestIDs.Add(requestId);
@@ -85,14 +87,14 @@ namespace DeltaSockets
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if(info == null)
+            if (info == null)
                 throw new ArgumentNullException("info");
 
             info.AddValue("dI", destsId.ToArray());
             info.AddValue("OT", OriginalType);
             info.AddValue("bN", blockNum);
 
-            if(splittedData != null)
+            if (splittedData != null)
                 info.AddValue("sD", splittedData.ToArray());
         }
     }
@@ -102,5 +104,4 @@ namespace DeltaSockets
         public Lazy<List<byte>> buffer = new Lazy<List<byte>>(() => new List<byte>());
         public int PacketCount;
     }
-
 }

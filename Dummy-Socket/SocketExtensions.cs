@@ -10,7 +10,9 @@ namespace DeltaSockets
     {
         public T min, max;
 
-        private MinMax() { }
+        private MinMax()
+        {
+        }
 
         public MinMax(T mn, T mx)
         {
@@ -54,7 +56,7 @@ namespace DeltaSockets
                 return false;
             }
 
-            if(mnmx != null)
+            if (mnmx != null)
             {
                 arr.Add(mnmx.min);
                 arr.Add(mnmx.max);
@@ -141,6 +143,7 @@ namespace DeltaSockets
                 case TypeCode.Double:
                 case TypeCode.Single:
                     return true;
+
                 default:
                     return false;
             }

@@ -81,6 +81,7 @@
     <Compile Include="SocketCommand.cs" />
     <Compile Include="SocketCommandData.cs" />
     <Compile Include="SocketExtensions.cs" />
+    <Compile Include="SocketGlobals.cs" />
     <Compile Include="SocketManager.cs" />
     <Compile Include="SocketMessage.cs" />
     <Compile Include="SocketServer.cs" />

@@ -1,19 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Dummy_Socket
 {
     public partial class frmOptions : EnhancedForm<frmOptions>
     {
         private static Configuration _config;
+
         public static Configuration config
         {
             get
@@ -23,6 +15,7 @@ namespace Dummy_Socket
                 return _config;
             }
         }
+
         public frmOptions()
         {
             InitializeComponent();

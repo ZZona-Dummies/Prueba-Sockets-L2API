@@ -26,6 +26,7 @@ namespace DeltaSockets
     {
         //Server
         Conn,
+
         ConfirmConnId,
         CloseClients,
         ClosedClient,
@@ -35,6 +36,7 @@ namespace DeltaSockets
 
         //Client
         CreateConnId,
+
         CloseInstance,
         //DeserializeData
     }
@@ -129,7 +131,7 @@ namespace DeltaSockets
                 using (MemoryStream memoryStream = new MemoryStream(message))
                 {
                     memoryStream.Seek(0, SeekOrigin.Begin);
-                    if(size > 0) memoryStream.SetLength(size);
+                    if (size > 0) memoryStream.SetLength(size);
                     sm = (T)(new BinaryFormatter()).Deserialize(memoryStream);
                 }
                 return true;

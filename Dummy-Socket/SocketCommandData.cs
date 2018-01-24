@@ -15,7 +15,7 @@ namespace DeltaSockets
         {
             get
             {
-                if(_dict.ContainsKey(key))
+                if (_dict.ContainsKey(key))
                     return _dict[key];
                 return null;
             }
