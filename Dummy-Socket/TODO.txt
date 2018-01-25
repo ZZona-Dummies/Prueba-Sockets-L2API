@@ -1,1 +1,13 @@
 ﻿Implementing Sockets from: https://github.com/ZZona-Dummies/csharpsockets
+
+I don't like BlockCopy and ArrayResize, I have to reimplement my own solution
+
+Quizás con la tontería no haga falta lo de trocear los datos, lo que significa que todo lo que estuve haciendo durante
+2 tardes no ha servido de nada... xD Aún así, usar arrays no es que lo vea muy util, tengo 3 implementaciones para usar
+y optimizar... La cuestión es ver que es lo mejor de cada una.
+
+Además, otra nota mental, es decir que la implementacion que hice de los paquetes fue inutil (ya que lo estaba haciendo 
+sobre un cliente sincrono), aunque bueno, aprendí cosas por el camino.
+
+Realmente no he perdido el tiempo... Es decir, ahora lo que toca es volver a implementar lo de las partes porque si
+envio un archivo de 2GB por sockets la RAM se petará

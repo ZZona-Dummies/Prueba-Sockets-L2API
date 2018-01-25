@@ -58,6 +58,14 @@ namespace Dummy_Socket
             }
         }
 
+        public bool ActiveTabIsClient
+        {
+            get
+            {
+                return tabControl1.SelectedTab == tabPage2;
+            }
+        }
+
         public const string notValidClientConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña clientes.",
                             notValidServerConn = "Por favor, revisa que los campos IP y puerto sean válidos en la pestaña servidores.";
 
@@ -171,8 +179,18 @@ namespace Dummy_Socket
 
         private void sendMsg_Click(object sender, EventArgs e)
         {
-            client.SendMessageToServer(clientMsg.Text);
-            clientMsg.Text = "";
+            if (ActiveTabIsClient && state == SocketState.NotStarted)
+            {
+                Start(true);
+                client.myLogger.Log("You have to connect. Autoconnecting...");
+            }
+
+            //Then...
+            if (state == SocketState.ClientStarted)
+            {
+                client.SendMessageToServer(clientMsg.Text);
+                clientMsg.Text = "";
+            }
         }
 
         public void SetName(string name)

@@ -153,22 +153,22 @@ namespace DeltaSockets
                         ServerSocket.Bind(IPEnd);
                         ServerSocket.Listen(100); //El servidor se prepara para recebir la conexion de 100 clientes simultaneamente
 
-                        Console.WriteLine("Waiting for a connection...");
+                        myLogger.Log("Waiting for a connection...");
                         ServerSocket.BeginAccept(new AsyncCallback(OnAccept), ServerSocket);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Exception ocurred while starting CLIENT: " + ex);
+                        myLogger.Log("Exception ocurred while starting CLIENT: " + ex);
                         return;
                     }
                     _state = SocketState.ServerStarted;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    myLogger.Log(ex.Message);
                 }
             }
-            else Console.WriteLine("Destination IP isn't defined!");
+            else myLogger.Log("Destination IP isn't defined!");
         }
 
         private void OnAccept(IAsyncResult ar)
@@ -186,7 +186,7 @@ namespace DeltaSockets
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception ocurred while accepting in async server: " + ex.Message);
+                myLogger.Log("Exception ocurred while accepting in async server: " + ex.Message);
             }
         }
 
@@ -202,7 +202,7 @@ namespace DeltaSockets
                 if (bytesRead > 0 && bytesRead <= StateObject.BufferSize)
                 {
                     //string str = Encoding.Unicode.GetString(byteData, 0, bytesRead); //Obtiene la longitud en bytes de los datos pasados y los transforma en una string
-                    Console.WriteLine("Server readed block of {0} bytes", bytesRead);
+                    myLogger.Log("Server readed block of {0} bytes", bytesRead);
 
                     if (sm != null)
                     {
@@ -235,7 +235,7 @@ namespace DeltaSockets
                 }
                 else if (bytesRead > StateObject.BufferSize)
                 {
-                    Console.WriteLine("Cannot deserialize something that is bigger from the buffer it can contain!");
+                    myLogger.Log("Cannot deserialize something that is bigger from the buffer it can contain!");
                 }
 
                 //Continua escuchando, para listar el próximo mensaje, recursividad asíncrona.
@@ -244,7 +244,7 @@ namespace DeltaSockets
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                myLogger.Log(ex.Message);
             }
         }
 
@@ -261,7 +261,7 @@ namespace DeltaSockets
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                myLogger.Log(ex.Message);
             }
         }*/
 
@@ -345,10 +345,7 @@ namespace DeltaSockets
             // instruct the client to begin receiving data
             SocketGlobals.AsyncReceiveState mState = new SocketGlobals.AsyncReceiveState();
             mState.Socket = mClientSocket;
-            if (ClientConnected != null)
-            {
-                ClientConnected(mState.Socket);
-            }
+            ClientConnected?.Invoke(mState.Socket);
             mState.Socket.BeginReceive(mState.Buffer, 0, SocketGlobals.gBufferSize, SocketFlags.None, new AsyncCallback(ClientMessageReceived), mState);
             // begin accepting another client connection
             mServerSocket.BeginAccept(new AsyncCallback(ClientAccepted), mServerSocket);
@@ -374,20 +371,14 @@ namespace DeltaSockets
                 // if we get a ConnectionReset exception, it could indicate that the client has disconnected
                 if (ex.SocketErrorCode == SocketError.ConnectionReset)
                 {
-                    if (ClientDisconnected != null)
-                    {
-                        ClientDisconnected(mState.Socket);
-                    }
+                    ClientDisconnected?.Invoke(mState.Socket);
                     return;
                 }
             }
             // if we get numBytesReceived equal to zero, it could indicate that the client has disconnected
             if (numBytesReceived == 0)
             {
-                if (ClientDisconnected != null)
-                {
-                    ClientDisconnected(mState.Socket);
-                }
+                ClientDisconnected?.Invoke(mState.Socket);
                 return;
             }
             // determine if this is the first data received
@@ -433,13 +424,19 @@ namespace DeltaSockets
 
         public void ParseReceivedClientMessage(string argCommandString, Socket argClient)
         {
-            Console.WriteLine("ParseReceivedClientMessage: " + argCommandString);
+            myLogger.Log("ParseReceivedClientMessage: " + argCommandString);
 
             // parse the command string
             string argCommand = null;
             string argText = null;
-            argCommand = argCommandString.Substring(0, argCommandString.IndexOf(" "));
-            argText = argCommandString.Remove(0, argCommand.Length + 1);
+
+            if (argCommandString.StartsWith("/"))
+            {
+                argCommand = argCommandString.Substring(0, argCommandString.IndexOf(" "));
+                argText = argCommandString.Remove(0, argCommand.Length + 1);
+            }
+            else
+                argText = argCommandString;
 
             switch (argText)
             {
@@ -448,10 +445,7 @@ namespace DeltaSockets
                     break;
             }
 
-            if (MessageReceived != null)
-            {
-                MessageReceived(argCommandString, argClient);
-            }
+            MessageReceived?.Invoke(argCommandString, argClient);
 
             //' respond back to the client on certain messages
             //Select Case argMessageString
@@ -496,6 +490,7 @@ namespace DeltaSockets
 
             // resize the BytesToSend array to fit both the mSizeBytes and the mPacketBytes
             // TODO: ReDim mState.BytesToSend(mPacketBytes.Length + mSizeBytes.Length - 1)
+            Array.Resize(ref mState.BytesToSend, mPacketBytes.Length + mSizeBytes.Length - 1);
 
             // copy the mSizeBytes and mPacketBytes to the BytesToSend array
             Buffer.BlockCopy(mSizeBytes, 0, mState.BytesToSend, 0, mSizeBytes.Length);
@@ -531,7 +526,7 @@ namespace DeltaSockets
             }
             catch (Exception ex)
             {
-                Console.WriteLine("DataSent error: " + ex.Message);
+                myLogger.Log("DataSent error: " + ex.Message);
             }
         }
 
@@ -557,7 +552,7 @@ namespace DeltaSockets
 
                         //Give id in a range...
                         bool b = routingTable.Keys.FindFirstMissingNumberFromSequence(out genID, new MinMax<ulong>(1 + (ulong)routingTable.Count * ushort.MaxValue, 1 + (ulong)routingTable.Count * ushort.MaxValue + ushort.MaxValue));
-                        Console.WriteLine("Adding #{0} client to routing table!", genID); //Esto ni parece funcionar bien
+                        myLogger.Log("Adding #{0} client to routing table!", genID); //Esto ni parece funcionar bien
 
                         handler.Send(SocketManager.SendConnId(genID));
                         break;
@@ -643,19 +638,19 @@ namespace DeltaSockets
         private void DoServerError(string msg, ulong id = 0, bool dis = false)
         {
             PoliteStop(dis, id);
-            Console.WriteLine("{0} CLOSING SERVER due to: " + msg,
+            myLogger.Log("{0} CLOSING SERVER due to: " + msg,
                 id == 0 ? "" : string.Format("(FirstClient: #{0})", id));
         }
 
         private void CloseAllClients(ulong id = 0)
         {
             if (id > 0) routingTable[id].Send(SocketManager.PoliteClose(id)); //First, close the client that has send make the request...
-            Console.WriteLine("Closing all {0} clients connected!", routingTable.Count);
+            myLogger.Log("Closing all {0} clients connected!", routingTable.Count);
             foreach (KeyValuePair<ulong, Socket> soc in routingTable)
             {
                 if (soc.Key != id) //Then, close the others one
                 {
-                    Console.WriteLine("Sending to CLIENT #{0} order to CLOSE", soc.Key);
+                    myLogger.Log("Sending to CLIENT #{0} order to CLOSE", soc.Key);
                     soc.Value.Send(SocketManager.PoliteClose(soc.Key)); //Encoding.Unicode.GetBytes("<close>")
                 }
             }
@@ -682,7 +677,7 @@ namespace DeltaSockets
             {
                 try
                 {
-                    Console.WriteLine("Closing server");
+                    myLogger.Log("Closing server");
 
                     _state = SocketState.ServerStopped;
                     if (ServerSocket.Connected) //Aqui lo que tengo que hacer es que se desconecten los clientes...
@@ -692,16 +687,16 @@ namespace DeltaSockets
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Exception ocurred while trying to stop server: " + ex);
+                    myLogger.Log("Exception ocurred while trying to stop server: " + ex);
                 }
             }
             else
-                Console.WriteLine("Server cannot be stopped because it hasn't been started!");
+                myLogger.Log("Server cannot be stopped because it hasn't been started!");
         }
 
         public void Dispose()
         {
-            Console.WriteLine("Disposing server");
+            myLogger.Log("Disposing server");
             PoliteStop(true);
         }
 

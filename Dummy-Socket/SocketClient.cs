@@ -265,13 +265,13 @@ namespace DeltaSockets
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Exception ocurred while starting CLIENT: " + ex);
+                    myLogger.Log("Exception ocurred while starting CLIENT: " + ex);
                     return;
                 }
                 _state = SocketState.ClientStarted;
             }
             else
-                Console.WriteLine("Destination IP isn't defined!");
+                myLogger.Log("Destination IP isn't defined!");
         }
 
         private void ConnectCallback(IAsyncResult ar)
@@ -284,7 +284,7 @@ namespace DeltaSockets
                 // Complete the connection.
                 client.EndConnect(ar);
 
-                Console.WriteLine("Socket connected to {0}",
+                myLogger.Log("Socket connected to {0}",
                     client.RemoteEndPoint.ToString());
 
                 // Signal that the connection has been made.
@@ -292,7 +292,7 @@ namespace DeltaSockets
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                myLogger.Log(e.ToString());
             }
         }
 
@@ -309,7 +309,7 @@ namespace DeltaSockets
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                myLogger.Log(e.ToString());
             }
         }
 
@@ -356,7 +356,7 @@ namespace DeltaSockets
             }
             catch (Exception ex)
             { //Forced connection close...
-                Console.WriteLine("Exception ocurred while receiving data! " + ex.ToString());
+                myLogger.Log("Exception ocurred while receiving data! " + ex.ToString());
                 //o = null; //Dead silence.
                 Stop();
             }
@@ -389,7 +389,7 @@ namespace DeltaSockets
                     bytesLength += m.Length;
                 }
 
-                Console.WriteLine("Sending on client serialized object of type: {0} and length of: {1}/{2}", msg.GetType().Name, bytesLength, bytesLength);
+                myLogger.Log("Sending on client serialized object of type: {0} and length of: {1}/{2}", msg.GetType().Name, bytesLength, bytesLength);
 
                 // Begin sending the data to the remote device.
                 // Aqui se usa ClientSocket al igual que en Receive
@@ -400,7 +400,7 @@ namespace DeltaSockets
             }
             else
             {
-                Console.WriteLine("Error happened while sending data through a client!");
+                myLogger.Log("Error happened while sending data through a client!");
                 return 0;
             }
         }
@@ -414,14 +414,14 @@ namespace DeltaSockets
 
                 // Complete sending the data to the remote device.
                 int bytesSent = client.EndSend(ar);
-                Console.WriteLine("Sent {0} bytes to server.", bytesSent);
+                myLogger.Log("Sent {0} bytes to server.", bytesSent);
 
                 // Signal that all bytes have been sent.
                 //sendDone.Set();
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                myLogger.Log(e.ToString());
             }
         }*/
 
@@ -453,7 +453,7 @@ namespace DeltaSockets
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ConnectToServer error: " + ex.Message);
+                myLogger.Log("ConnectToServer error: " + ex.Message);
             }
         }
 
@@ -488,7 +488,7 @@ namespace DeltaSockets
             catch (Exception ex)
             {
                 // at this point, the EndConnect failed and we are NOT connected to the server!
-                Console.WriteLine("Connect error: " + ex.Message);
+                myLogger.Log("Connect error: " + ex.Message);
             }
         }
 
@@ -545,7 +545,7 @@ namespace DeltaSockets
 
         public void ParseReceivedServerMessage(string argCommandString, Socket argClient)
         {
-            Console.WriteLine(argCommandString);
+            myLogger.Log(argCommandString);
             //Select Case argDat
             //    Case "hi"
             //        Send("hi", argClient)
@@ -634,7 +634,7 @@ namespace DeltaSockets
             }
             catch (Exception ex)
             {
-                Console.WriteLine("DataSent error: " + ex.Message);
+                myLogger.Log("DataSent error: " + ex.Message);
             }
         }
 
@@ -651,25 +651,25 @@ namespace DeltaSockets
                 switch (cmd.Command)
                 {
                     case SocketCommands.CreateConnId:
-                        Console.WriteLine("Starting new CLIENT connection with ID: {0}", sm.id);
+                        myLogger.Log("Starting new CLIENT connection with ID: {0}", sm.id);
                         Id = sm.id;
 
                         //Send(SocketManager.ConfirmConnId(Id)); //???
                         break;
 
                     case SocketCommands.CloseInstance:
-                        Console.WriteLine("Client is closing connection...");
+                        myLogger.Log("Client is closing connection...");
                         Stop();
                         break;
 
                     default:
-                        Console.WriteLine("Unknown ClientCallbackion to take! Case: {0}", cmd);
+                        myLogger.Log("Unknown ClientCallbackion to take! Case: {0}", cmd);
                         break;
                 }
             }
             else
             {
-                Console.WriteLine("Empty string received by client!");
+                myLogger.Log("Empty string received by client!");
             }
         }
 
@@ -707,7 +707,7 @@ namespace DeltaSockets
                         });
                     }
 
-                    Console.WriteLine("Receiving {0}/{1} packets...", dataBuffer.Value[reqId].PacketCount, buf.blockNum);
+                    myLogger.Log("Receiving {0}/{1} packets...", dataBuffer.Value[reqId].PacketCount, buf.blockNum);
 
                     if (dataBuffer.Value[reqId].PacketCount == buf.blockNum)
                     {
@@ -717,12 +717,12 @@ namespace DeltaSockets
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Buffer couldn't add bytes due to an exception! Ex: " + ex);
+                    myLogger.Log("Buffer couldn't add bytes due to an exception! Ex: " + ex);
                 }
             }
             else
             {
-                Console.WriteLine("Empty buffer received by client!");
+                myLogger.Log("Empty buffer received by client!");
             }
             o = null;
         }
@@ -733,7 +733,7 @@ namespace DeltaSockets
         {
             if (soShutdown == SocketShutdown.Receive)
             {
-                Console.WriteLine("Remember that you're in a Client, you can't only close Both connections or only your connection.");
+                myLogger.Log("Remember that you're in a Client, you can't only close Both connections or only your connection.");
                 return;
             }
             if (ClientSocket.Connected)
@@ -761,7 +761,7 @@ namespace DeltaSockets
             {
                 try
                 {
-                    Console.WriteLine("Closing client (#{0})", Id);
+                    myLogger.Log("Closing client (#{0})", Id);
 
                     //Send(SocketManager.ClientClosed(Id)); //???
                     _state = SocketState.ClientStopped;
@@ -770,11 +770,11 @@ namespace DeltaSockets
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Exception ocurred while trying to stop client: " + ex);
+                    myLogger.Log("Exception ocurred while trying to stop client: " + ex);
                 }
             }
             else
-                Console.WriteLine("Client cannot be stopped because it hasn't been started!");
+                myLogger.Log("Client cannot be stopped because it hasn't been started!");
         }
 
         #endregion "Error & Close & Stop & Dispose"

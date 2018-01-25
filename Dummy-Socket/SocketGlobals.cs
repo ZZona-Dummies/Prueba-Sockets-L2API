@@ -65,10 +65,7 @@
             public void Add(AsyncSendState argState)
             {
                 this.Messages.Enqueue(argState);
-                if (MessageQueued != null)
-                {
-                    MessageQueued();
-                }
+                MessageQueued?.Invoke();
             }
         }
     }

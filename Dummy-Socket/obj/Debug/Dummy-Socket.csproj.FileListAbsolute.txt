@@ -41,3 +41,4 @@ X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Dummy-Sock
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Dummy-Socket.pdb
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Newtonsoft.Json.dll
 X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\bin\Debug\Newtonsoft.Json.xml
+X:\Visual Studio Projects\Prueba-Sockets-L2API\Dummy-Socket\obj\Debug\Dummy-Socket.csprojResolveAssemblyReference.cache
