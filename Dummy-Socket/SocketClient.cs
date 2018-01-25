@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -59,6 +60,7 @@ namespace DeltaSockets
 
         public ulong Id;
 
+        [Obsolete("Use IPEnd instead.")]
         private IPEndPoint _endpoint;
 
         private StateObject stateObject = new StateObject();
@@ -245,7 +247,7 @@ namespace DeltaSockets
                 try
                 {
                     // Connect to the remote endpoint.
-                    ClientSocket.BeginConnect(_endpoint,
+                    ClientSocket.BeginConnect(IPEnd,
                         new AsyncCallback(ConnectCallback), ClientSocket);
                     connectDone.WaitOne();
 
@@ -423,10 +425,6 @@ namespace DeltaSockets
             }
         }*/
 
-        private int cServerPort = 9898;
-        private string cServerAddress = "localhost";
-
-        private Socket cClientSocket;
         private SocketGlobals.MessageQueue cSendQueue = new SocketGlobals.MessageQueue();
 
         public event MessageSentToServerEventHandler MessageSentToServer;
@@ -451,7 +449,7 @@ namespace DeltaSockets
             // connect to server async
             try
             {
-                cClientSocket.BeginConnect(_endpoint, new AsyncCallback(ConnectToServerCompleted), new SocketGlobals.AsyncSendState(cClientSocket));
+                ClientSocket.BeginConnect(IPEnd, new AsyncCallback(ConnectToServerCompleted), new SocketGlobals.AsyncSendState(ClientSocket));
             }
             catch (Exception ex)
             {
@@ -461,7 +459,7 @@ namespace DeltaSockets
 
         public void DisconnectFromServer()
         {
-            cClientSocket.Disconnect(false);
+            ClientSocket.Disconnect(false);
         }
 
         /// <summary>
@@ -578,7 +576,7 @@ namespace DeltaSockets
             byte[] mSizeBytes = BitConverter.GetBytes(mPacketBytes.Length + 4);
 
             // create the async state object which we can pass between async methods
-            SocketGlobals.AsyncSendState mState = new SocketGlobals.AsyncSendState(cClientSocket);
+            SocketGlobals.AsyncSendState mState = new SocketGlobals.AsyncSendState(ClientSocket);
 
             // resize the BytesToSend array to fit both the mSizeBytes and the mPacketBytes
             // ERROR: Not supported in C#: ReDimStatement
@@ -588,7 +586,7 @@ namespace DeltaSockets
             Buffer.BlockCopy(mSizeBytes, 0, mState.BytesToSend, 0, mSizeBytes.Length);
             Buffer.BlockCopy(mPacketBytes, 0, mState.BytesToSend, mSizeBytes.Length, mPacketBytes.Length);
 
-            cClientSocket.BeginSend(mState.BytesToSend, mState.NextOffset(), mState.NextLength(), SocketFlags.None, new AsyncCallback(MessagePartSent), mState);
+            ClientSocket.BeginSend(mState.BytesToSend, mState.NextOffset(), mState.NextLength(), SocketFlags.None, new AsyncCallback(MessagePartSent), mState);
         }
 
         ///' <summary>
@@ -609,7 +607,7 @@ namespace DeltaSockets
                 // process the top message in the queue, which in turn will process all other messages until the queue is empty
                 SocketGlobals.AsyncSendState mState = (SocketGlobals.AsyncSendState)cSendQueue.Messages.Dequeue();
                 // we must send the correct number of bytes, which must not be greater than the remaining bytes
-                cClientSocket.BeginSend(mState.BytesToSend, mState.NextOffset(), mState.NextLength(), SocketFlags.None, new AsyncCallback(MessagePartSent), mState);
+                ClientSocket.BeginSend(mState.BytesToSend, mState.NextOffset(), mState.NextLength(), SocketFlags.None, new AsyncCallback(MessagePartSent), mState);
             }
         }
 

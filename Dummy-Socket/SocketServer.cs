@@ -41,7 +41,9 @@ namespace DeltaSockets
         /// </summary>
         public int Port;
 
+        [Obsolete("Use IPEnd instead.")]
         private IPEndPoint _endpoint;
+
         private byte[] byteData = new byte[StateObject.BufferSize];
 
         /// <summary>
@@ -263,10 +265,6 @@ namespace DeltaSockets
             }
         }*/
 
-        private int cServerPort = 9898;
-
-        private string cServerAddress = "localhost";
-        private Socket cServerSocket;
         private bool cStopRequested;
 
         private System.Collections.ArrayList cClients = new System.Collections.ArrayList();
@@ -294,10 +292,10 @@ namespace DeltaSockets
         public void StartServer()
         {
             // create the TcpListener which will listen for and accept new client connections asynchronously
-            cServerSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            /*ServerSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             // convert the server address and port into an ipendpoint
-            IPAddress[] mHostAddresses = Dns.GetHostAddresses(cServerAddress);
+            IPAddress[] mHostAddresses = Dns.GetHostAddresses(ServerAddress);
             IPEndPoint mEndPoint = null;
             foreach (IPAddress mHostAddress in mHostAddresses)
             {
@@ -305,22 +303,22 @@ namespace DeltaSockets
                 {
                     mEndPoint = new IPEndPoint(mHostAddress, cServerPort);
                 }
-            }
+            }*/
 
             // bind to the server's ipendpoint
-            cServerSocket.Bind(mEndPoint);
+            ServerSocket.Bind(IPEnd);
 
             // configure the listener to allow 1 incoming connection at a time
-            cServerSocket.Listen(1);
+            ServerSocket.Listen(1000);
 
             // accept client connection async
-            cServerSocket.BeginAccept(new AsyncCallback(ClientAccepted), cServerSocket);
+            ServerSocket.BeginAccept(new AsyncCallback(ClientAccepted), ServerSocket);
         }
 
         public void StopServer()
         {
             //cServerSocket.Disconnect(True)
-            cServerSocket.Close();
+            ServerSocket.Close();
             //cStopRequested = True
         }
 
