@@ -84,12 +84,16 @@ namespace Dummy_Socket
         {
             if (tabControl1.SelectedTab != tabPage1)
                 tabControl1.SelectedTab = tabPage1;
+
+            Start(false); // ??? si la config lo establece hacer autoconexion... Configurar esto
         }
 
         public void ShowClientTab()
         {
             if (tabControl1.SelectedTab != tabPage2)
                 tabControl1.SelectedTab = tabPage2;
+
+            Start(true); // ??? más de lo mismo para esto
         }
 
         public void Start(bool isClient)
@@ -98,41 +102,41 @@ namespace Dummy_Socket
             socketID = ++frmMain.lastID;
             if (isClient)
             {
-                if (client == null)
-                {
-                    if (ValidateClient())
+                SocketClientConsole logger = new SocketClientConsole(receivedMsgs, false);
+                if (ValidateClient())
+                { // ??? vvv esto lo tengo que cambiar por un task vvv
+                    workerObject = new BackgroundWorker() { WorkerSupportsCancellation = true };
+                    workerObject.DoWork += (s, ev) =>
                     {
-                        workerObject = new BackgroundWorker() { WorkerSupportsCancellation = true };
-                        workerObject.DoWork += (s, ev) =>
-                        {
-                            client.DoConnection();
-                        };
+                        client.DoConnection();
+                    };
 
-                        client = new SocketClient(clientIP.Text, (ushort)clientPort.Value, ClientAction());
-                        client.myLogger = new SocketClientConsole(receivedMsgs, false);
-                        workerObject.RunWorkerAsync();
+                    client = new SocketClient(clientIP.Text, (ushort)clientPort.Value, ClientAction());
+                    client.myLogger = logger;
+                    workerObject.RunWorkerAsync();
 
-                        succ = true;
-                    }
-                    else
-                        client.myLogger.LogError(notValidClientConn);
+                    succ = true;
                 }
+                else
+                    client.myLogger.LogError(notValidClientConn);
             }
             else
             {
+                SocketServerConsole logger = new SocketServerConsole(serverLog);
                 if (ValidateServer())
                 {
                     server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int)serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
-                    server.myLogger = new SocketServerConsole(serverLog);
+                    server.myLogger = logger;
                     server.StartServer();
 
                     succ = true;
                 }
                 else
-                    client.myLogger.LogError(notValidServerConn);
+                    logger.Log(notValidServerConn); // ??? LogError no existe
             }
             if (succ)
             {
+                Console.WriteLine("Socket started succesfully!");
                 state = isClient ? SocketState.ClientStarted : SocketState.ServerStarted;
                 frmMain.socketIns.Add(socketID, new SocketInstance(this, isClient));
             }
@@ -159,11 +163,13 @@ namespace Dummy_Socket
 
         private bool ValidateClient()
         {
+            //client != null &&  ???
             return !string.IsNullOrWhiteSpace(clientIP.Text);
         }
 
         private bool ValidateServer()
         {
+            // server != null && ???
             return !string.IsNullOrWhiteSpace(serverIP.Text);
         }
 
@@ -232,6 +238,29 @@ namespace Dummy_Socket
         private void DisableControls(bool isClient)
         {
             ControlControls(isClient, false);
+        }
+
+        private void frmSocket_KeyDown(object sender, KeyEventArgs e)
+        {
+            Console.WriteLine("FrmSocket_KeyDown: " + e.KeyCode);
+            if (e.KeyCode == Keys.Enter)
+            {
+                if (ActiveTabIsClient)
+                    sendMsg_Click(null, null);
+                else
+                    startServer_Click(null, null);
+            }
+        }
+
+        private void frmSocket_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            Console.WriteLine(e.KeyChar);
+        }
+
+        private void clientMsg_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+                sendMsg_Click(null, null);
         }
 
         internal void ControlControls(bool isClient, bool enable)

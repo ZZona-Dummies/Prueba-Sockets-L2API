@@ -214,6 +214,7 @@
             this.clientMsg.Name = "clientMsg";
             this.clientMsg.Size = new System.Drawing.Size(274, 20);
             this.clientMsg.TabIndex = 20;
+            this.clientMsg.KeyDown += new System.Windows.Forms.KeyEventHandler(this.clientMsg_KeyDown);
             // 
             // label9
             // 
@@ -334,6 +335,8 @@
             this.Text = "Dummy Sockets - Conexiones";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmSocket_Closing);
             this.Load += new System.EventHandler(this.frmSocket_Load);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.frmSocket_KeyDown);
+            this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.frmSocket_KeyPress);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();

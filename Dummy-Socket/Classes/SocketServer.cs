@@ -490,7 +490,7 @@ namespace DeltaSockets
 
             // resize the BytesToSend array to fit both the mSizeBytes and the mPacketBytes
             // TODO: ReDim mState.BytesToSend(mPacketBytes.Length + mSizeBytes.Length - 1)
-            Array.Resize(ref mState.BytesToSend, mPacketBytes.Length + mSizeBytes.Length - 1);
+            Array.Resize(ref mState.BytesToSend, mPacketBytes.Length + mSizeBytes.Length);
 
             // copy the mSizeBytes and mPacketBytes to the BytesToSend array
             Buffer.BlockCopy(mSizeBytes, 0, mState.BytesToSend, 0, mSizeBytes.Length);
