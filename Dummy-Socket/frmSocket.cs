@@ -116,7 +116,7 @@ namespace Dummy_Socket
                 {
                     server = new SocketServer(new SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts), IPAddress.Parse(serverIP.Text), (int)serverPort.Value, SocketType.Stream, ProtocolType.Tcp, true);
                     server.myLogger = new SocketServerConsole(serverLog);
-                    server.ComeAlive();
+                    server.StartServer();
 
                     succ = true;
                 }
@@ -171,7 +171,7 @@ namespace Dummy_Socket
 
         private void sendMsg_Click(object sender, EventArgs e)
         {
-            client.Send(clientMsg.Text);
+            client.SendMessageToServer(clientMsg.Text);
             clientMsg.Text = "";
         }
 

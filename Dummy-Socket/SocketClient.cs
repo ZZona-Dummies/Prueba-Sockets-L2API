@@ -230,7 +230,7 @@ namespace DeltaSockets
         [Obsolete]
         private void Timering(object stateInfo)
         {
-            Receive();
+            //Receive();
             //ClientCallback(null);
             //if (deserialize) deserialize = false;
         }
@@ -433,10 +433,10 @@ namespace DeltaSockets
 
         public delegate void MessageSentToServerEventHandler(string argCommandString);
 
-        public void ConnectToServer()
+        public void DoConnection()
         {
             // create the TcpListener which will listen for and accept new client connections asynchronously
-            cClientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            /*cClientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             // convert the server address and port into an ipendpoint
             IPAddress[] mHostAddresses = Dns.GetHostAddresses(cServerAddress);
             IPEndPoint mEndPoint = null;
@@ -446,12 +446,12 @@ namespace DeltaSockets
                 {
                     mEndPoint = new IPEndPoint(mHostAddress, cServerPort);
                 }
-            }
+            }*/
 
             // connect to server async
             try
             {
-                cClientSocket.BeginConnect(mEndPoint, new AsyncCallback(ConnectToServerCompleted), new SocketGlobals.AsyncSendState(cClientSocket));
+                cClientSocket.BeginConnect(_endpoint, new AsyncCallback(ConnectToServerCompleted), new SocketGlobals.AsyncSendState(cClientSocket));
             }
             catch (Exception ex)
             {
@@ -585,8 +585,8 @@ namespace DeltaSockets
             Array.Resize(ref mState.BytesToSend, mPacketBytes.Length + mSizeBytes.Length);
 
             // copy the mSizeBytes and mPacketBytes to the BytesToSend array
-            System.Buffer.BlockCopy(mSizeBytes, 0, mState.BytesToSend, 0, mSizeBytes.Length);
-            System.Buffer.BlockCopy(mPacketBytes, 0, mState.BytesToSend, mSizeBytes.Length, mPacketBytes.Length);
+            Buffer.BlockCopy(mSizeBytes, 0, mState.BytesToSend, 0, mSizeBytes.Length);
+            Buffer.BlockCopy(mPacketBytes, 0, mState.BytesToSend, mSizeBytes.Length, mPacketBytes.Length);
 
             cClientSocket.BeginSend(mState.BytesToSend, mState.NextOffset(), mState.NextLength(), SocketFlags.None, new AsyncCallback(MessagePartSent), mState);
         }
@@ -656,7 +656,7 @@ namespace DeltaSockets
                         Console.WriteLine("Starting new CLIENT connection with ID: {0}", sm.id);
                         Id = sm.id;
 
-                        Send(SocketManager.ConfirmConnId(Id));
+                        //Send(SocketManager.ConfirmConnId(Id)); //???
                         break;
 
                     case SocketCommands.CloseInstance:
@@ -765,7 +765,7 @@ namespace DeltaSockets
                 {
                     Console.WriteLine("Closing client (#{0})", Id);
 
-                    Send(SocketManager.ClientClosed(Id));
+                    //Send(SocketManager.ClientClosed(Id)); //???
                     _state = SocketState.ClientStopped;
                     CloseConnection(SocketShutdown.Both); //No hace falta comprobar si estamos connected
                     Dispose();

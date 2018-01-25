@@ -130,7 +130,7 @@ namespace DeltaSockets
             ServerSocket = new Socket(ipAddr.AddressFamily, sType, pType);
 
             if (doConnection)
-                ComeAlive(); // ???
+                StartServer(); // ??? --> ComeAlive
         }
 
         #endregion "Socket Constructors"
@@ -500,8 +500,8 @@ namespace DeltaSockets
             // TODO: ReDim mState.BytesToSend(mPacketBytes.Length + mSizeBytes.Length - 1)
 
             // copy the mSizeBytes and mPacketBytes to the BytesToSend array
-            System.Buffer.BlockCopy(mSizeBytes, 0, mState.BytesToSend, 0, mSizeBytes.Length);
-            System.Buffer.BlockCopy(mPacketBytes, 0, mState.BytesToSend, mSizeBytes.Length, mPacketBytes.Length);
+            Buffer.BlockCopy(mSizeBytes, 0, mState.BytesToSend, 0, mSizeBytes.Length);
+            Buffer.BlockCopy(mPacketBytes, 0, mState.BytesToSend, mSizeBytes.Length, mPacketBytes.Length);
 
             // queue the Message
             argClient.BeginSend(mState.BytesToSend, mState.NextOffset(), mState.NextLength(), SocketFlags.None, new AsyncCallback(MessagePartSent), mState);
