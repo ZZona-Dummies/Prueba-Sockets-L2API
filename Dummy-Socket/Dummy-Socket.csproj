@@ -76,7 +76,6 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Classes\SocketBuffer.cs" />
     <Compile Include="Classes\SocketClient.cs" />
     <Compile Include="Classes\SocketCommand.cs" />
     <Compile Include="Classes\SocketCommandData.cs" />

@@ -1,18 +1,38 @@
-﻿namespace DeltaSockets
+﻿using System;
+using System.IO;
+
+namespace DeltaSockets
 {
     public static class SocketGlobals
     {
-        public static int gBufferSize = 1024;
+        public const int gBufferSize = 1024;
 
         public class AsyncReceiveState
         {
             public System.Net.Sockets.Socket Socket;
             public byte[] Buffer = new byte[gBufferSize];
 
-            // a buffer for appending received data to build the packet
-            public System.IO.MemoryStream PacketBufferStream = new System.IO.MemoryStream();
+            internal MemoryStream _packetBuff;
 
-            public string Packet;
+            // a buffer for appending received data to build the packet
+            public MemoryStream PacketBufferStream
+            {
+                get
+                {
+                    if (_packetBuff == null)
+                    {
+                        Console.WriteLine("Creating a new MemoryStream");
+                        _packetBuff = new MemoryStream();
+                    }
+                    return _packetBuff;
+                }
+                set
+                {
+                    _packetBuff = value;
+                }
+            }
+
+            public object Packet;
 
             // the size (in bytes) of the Packet
             public int ReceiveSize;
@@ -32,7 +52,7 @@
 
             public AsyncSendState(System.Net.Sockets.Socket argSocket)
             {
-                this.Socket = argSocket;
+                Socket = argSocket;
             }
 
             public int NextOffset()
@@ -64,7 +84,7 @@
 
             public void Add(AsyncSendState argState)
             {
-                this.Messages.Enqueue(argState);
+                Messages.Enqueue(argState);
                 MessageQueued?.Invoke();
             }
         }

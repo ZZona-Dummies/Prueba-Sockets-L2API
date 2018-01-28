@@ -53,17 +53,8 @@ namespace DeltaSockets
         /// </summary>
         public ulong ClientOriginId; //0 is never used, because 0 is for all clients...
 
-        public ulong RequestID;
-
-        public int MessageSize
-        {
-            get
-            { //This can contain up to (2^32 / 2^12 = 2^20) bytes only or 1GB only
-                if (msg is SocketBuffer)
-                    return ((SocketBuffer)msg).blockNum * StateObject.BufferSize;
-                return -1;
-            }
-        }
+        public ulong[] DestsId = new ulong[1] { ulong.MaxValue };
+        //Max values is for broad cast, 0 is only for server, etc...
 
         public Type Type
         {
@@ -84,11 +75,16 @@ namespace DeltaSockets
         /// </summary>
         /// <param name="i">The i.</param>
         /// <param name="m">The m.</param>
-        public SocketMessage(ulong oi, ulong rid, object m)
+        public SocketMessage(ulong oi, object m)
         {
             ClientOriginId = oi;
-            RequestID = rid;
+            //RequestID = rid;
             msg = m;
+        }
+
+        public void SetDestIds(params ulong[] ids)
+        {
+            DestsId = ids;
         }
 
         public T TryGetObject<T>()

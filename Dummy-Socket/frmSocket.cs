@@ -142,9 +142,9 @@ namespace Dummy_Socket
             }
         }
 
-        private Action<object> ClientAction()
+        private Action<object, Socket> ClientAction()
         {
-            return (o) =>
+            return (o, s) =>
             {
                 //byte[] bytes = new byte[1024];
 
